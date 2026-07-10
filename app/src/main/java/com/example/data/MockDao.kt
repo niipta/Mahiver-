@@ -25,6 +25,14 @@ interface MockDao {
     @Query("SELECT * FROM mock_tests WHERE id = :id")
     suspend fun getRawMockTest(id: String): MockTestEntity?
 
+    /** Synchronous bulk read for backup. Returns all mock tests. */
+    @Query("SELECT * FROM mock_tests")
+    suspend fun getAllMockTestsSync(): List<MockTestEntity>
+
+    /** Synchronous bulk read for backup. Returns all mock question logs. */
+    @Query("SELECT * FROM mock_questions")
+    suspend fun getAllMockQuestionsSync(): List<MockQuestionLogEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMockTest(mockTest: MockTestEntity)
 

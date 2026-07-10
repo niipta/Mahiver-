@@ -2,12 +2,23 @@ package com.example.data
 
 import android.content.Context
 import androidx.room.withTransaction
-import com.example.util.SecurityUtil
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+/**
+ * Backup & restore repository.
+ *
+ * Stores backups as plain JSON (version 2). The old v1 approach used
+ * AndroidKeystore encryption which was device-locked — uninstalling the app
+ * deleted the key, making all backups unreadable. Plain JSON is portable
+ * across devices and survives reinstalls, which is what users actually need.
+ *
+ * The backup file is saved with a `.json` extension and can be inspected in
+ * any text editor. This is a deliberate trade-off: no encryption, but the file
+ * works after uninstall/reinstall and across devices.
+ */
 class BackupRepository(private val context: Context) {
     private val moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
     private val backupAdapter = moshi.adapter(BackupData::class.java)
@@ -29,14 +40,19 @@ class BackupRepository(private val context: Context) {
                     revisions = db.revisionDao().getAllRevisionsSync(),
                     focusSessions = db.focusDao().getAllSessionsSync(),
                     dailyPlans = db.plannerDao().getAllDailyPlansSync(),
-                    exams = db.examDao().getAllExamsSync()
+                    exams = db.examDao().getAllExamsSync(),
+                    mockTests = db.mockDao().getAllMockTestsSync(),
+                    mockQuestions = db.mockDao().getAllMockQuestionsSync()
                 )
 
-                val jsonStr = backupAdapter.toJson(backupData)
-                val encryptedBlob = SecurityUtil.encryptData(jsonStr)
+                // Pretty-printed JSON so users can inspect the file if needed.
+                val jsonStr = backupAdapter.indent("  ").toJson(backupData)
 
-                context.contentResolver.openOutputStream(uri)?.use { it.write(encryptedBlob.toByteArray(Charsets.UTF_8)) }
-                Result.success(encryptedBlob)
+                context.contentResolver.openOutputStream(uri)?.use { it.write(jsonStr.toByteArray(Charsets.UTF_8)) }
+                    ?: return@withContext Result.failure(IllegalStateException("Could not write to file"))
+
+                val summary = "${backupData.subjects.size} subjects, ${backupData.focusSessions.size} sessions, ${backupData.mockTests.size} mocks"
+                Result.success(summary)
             } catch (e: Exception) {
                 e.printStackTrace()
                 Result.failure(e)
@@ -44,22 +60,30 @@ class BackupRepository(private val context: Context) {
         }
     }
 
-    suspend fun restoreBackup(uri: android.net.Uri): Result<Unit> {
+    suspend fun restoreBackup(uri: android.net.Uri): Result<String> {
         return withContext(Dispatchers.IO) {
             try {
                 val db = AppDatabase.getDatabase(context)
 
-                val jsonStr = try {
-                    val encryptedBlob = context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() } ?: ""
-                    SecurityUtil.decryptData(encryptedBlob)
-                } catch (e: IllegalArgumentException) {
-                    return@withContext Result.failure(e)
-                } catch (e: Exception) {
-                    return@withContext Result.failure(IllegalArgumentException("Wrong key or corrupted file"))
+                // Read the file as text
+                val fileContent = context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+                    ?: return@withContext Result.failure(IllegalArgumentException("Could not read file"))
+
+                if (fileContent.isBlank()) {
+                    return@withContext Result.failure(IllegalArgumentException("File is empty"))
                 }
 
-                val backupData = backupAdapter.fromJson(jsonStr)
-                    ?: return@withContext Result.failure(IllegalArgumentException("Invalid backup format"))
+                // Parse JSON
+                val backupData = try {
+                    backupAdapter.fromJson(fileContent)
+                } catch (e: Exception) {
+                    return@withContext Result.failure(IllegalArgumentException("Invalid backup format: not a valid MahirVerse backup file"))
+                } ?: return@withContext Result.failure(IllegalArgumentException("Invalid backup format: empty or corrupt file"))
+
+                // Validate it has the required fields
+                if (backupData.subjects == null) {
+                    return@withContext Result.failure(IllegalArgumentException("Invalid backup: missing subjects data"))
+                }
 
                 db.withTransaction {
                     backupData.settings?.let { backupSettings ->
@@ -77,9 +101,13 @@ class BackupRepository(private val context: Context) {
                     backupData.focusSessions.forEach { db.focusDao().insertSession(it) }
                     backupData.dailyPlans.forEach { db.plannerDao().insertPlan(it) }
                     backupData.exams.forEach { db.examDao().insertExam(it) }
+                    // Restore mock data (v2 backups only; v1 backups have empty lists)
+                    backupData.mockTests.forEach { db.mockDao().insertMockTest(it) }
+                    backupData.mockQuestions.forEach { db.mockDao().insertQuestionLog(it) }
                 }
 
-                Result.success(Unit)
+                val summary = "${backupData.subjects.size} subjects, ${backupData.focusSessions.size} sessions, ${backupData.mockTests.size} mocks"
+                Result.success(summary)
             } catch (e: Exception) {
                 e.printStackTrace()
                 Result.failure(e)

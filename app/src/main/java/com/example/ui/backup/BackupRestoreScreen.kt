@@ -77,7 +77,7 @@ fun BackupRestoreScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                "Export your syllabus, planner, revisions, and focus history to a JSON file. Keep it safe to restore your progress anytime.",
+                "Export your syllabus, planner, revisions, focus history, and mock tests to a JSON file. Keep it safe to restore your progress anytime — even after uninstall.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 15.sp,
                 lineHeight = 22.sp

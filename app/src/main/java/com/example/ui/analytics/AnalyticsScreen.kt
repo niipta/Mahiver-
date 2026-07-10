@@ -41,22 +41,12 @@ import com.example.ui.components.MahirCard
 import com.example.ui.theme.*
 import kotlinx.coroutines.delay
 import androidx.compose.ui.text.style.TextAlign
-import androidx.core.content.FileProvider
-import android.content.Intent
-import android.graphics.Bitmap
-import androidx.compose.ui.graphics.asAndroidBitmap
-import java.io.File
-import java.io.FileOutputStream
-import androidx.compose.ui.graphics.rememberGraphicsLayer
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.layer.drawLayer
 import kotlinx.coroutines.launch
 import com.example.data.SubjectWithTopics
 import com.example.data.FocusSessionEntity
 
 
 
-@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
 fun AnalyticsScreen(
     modifier: Modifier = Modifier,
@@ -64,12 +54,11 @@ fun AnalyticsScreen(
     viewModel: AnalyticsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val graphicsLayer = rememberGraphicsLayer()
     val coroutineScope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
-    
+
     var selectedRange by remember { mutableStateOf("7D") }
-    
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
@@ -81,12 +70,6 @@ fun AnalyticsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .drawWithContent {
-                    graphicsLayer.record {
-                        this@drawWithContent.drawContent()
-                    }
-                    drawLayer(graphicsLayer)
-                }
                 .padding(horizontal = 20.dp),
             contentPadding = PaddingValues(top = 56.dp, bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
@@ -95,12 +78,7 @@ fun AnalyticsScreen(
                 AnimatedEntry(0) {
                     HeaderSection(onShareClick = {
                         coroutineScope.launch {
-                            try {
-                                val bitmap = graphicsLayer.toImageBitmap().asAndroidBitmap()
-                                shareBitmap(context, bitmap)
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
+                            shareAnalyticsText(context, state)
                         }
                     })
                 }
@@ -203,20 +181,29 @@ fun AnalyticsScreen(
     }
 }
 
-fun shareBitmap(context: android.content.Context, bitmap: Bitmap) {
+fun shareAnalyticsText(context: android.content.Context, state: AnalyticsUiState) {
     try {
-        val cachePath = File(context.cacheDir, "images")
-        cachePath.mkdirs()
-        val file = File(cachePath, "analytics_export.png")
-        val stream = FileOutputStream(file)
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
-        stream.close()
+        val report = buildString {
+            appendLine("📊 MahirVerse Analytics Report")
+            appendLine("Date: ${java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault()).format(java.util.Date())}")
+            appendLine()
+            appendLine("⏱ Study Time: ${state.lifetimeFocusMinutes / 60}h ${state.lifetimeFocusMinutes % 60}m")
+            appendLine("🔥 Current Streak: ${state.currentStreak} days")
+            appendLine("🏆 Longest Streak: ${state.longestStreak} days")
+            appendLine("📚 Topics Mastered: ${state.topicsCompleted}/${state.totalTopics}")
+            appendLine("📝 Revisions Done: ${state.focusSessions.count { it.sessionType == "Revision" }}")
+            appendLine()
+            if (state.weakSubjects.isNotEmpty()) {
+                appendLine("⚠️ Weak Subjects: ${state.weakSubjects.joinToString(", ")}")
+            }
+            appendLine()
+            appendLine("— Shared from MahirVerse")
+        }
 
-        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
         val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "image/png"
-            putExtra(Intent.EXTRA_STREAM, uri)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            type = "text/plain"
+            putExtra(Intent.EXTRA_SUBJECT, "MahirVerse Analytics Report")
+            putExtra(Intent.EXTRA_TEXT, report)
         }
         context.startActivity(Intent.createChooser(intent, "Share Analytics"))
     } catch (e: Exception) {
