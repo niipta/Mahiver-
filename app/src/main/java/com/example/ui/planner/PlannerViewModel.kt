@@ -163,14 +163,28 @@ class PlannerViewModel @Inject constructor(
         }
     }
 
-    fun markSubtopicCompleted(subtopic: SubtopicEntity, completed: Boolean) {
+    fun markSubtopicCompleted(subtopic: SubtopicEntity, completed: Boolean, addToRevision: Boolean = false) {
         val completionManager = com.example.domain.CompletionManager(syllabusDao, revisionDao, syncDao)
-        
+
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             val topic = syllabusDao.getTopicById(subtopic.topicId)
             val subject = if (topic != null) syllabusDao.getSubjectById(topic.subjectId) else null
             val subjectName = subject?.name ?: "Subject"
-            completionManager.toggleSubtopicCompletion(subtopic, subjectName, completed)
+            completionManager.toggleSubtopicCompletion(subtopic, subjectName, completed, addToRevision)
+        }
+    }
+
+    /**
+     * Marks a whole topic (no subtopics case) complete. When [addToRevision]
+     * is true, also schedules a revision for it.
+     */
+    fun markTopicCompleted(topic: TopicEntity, completed: Boolean, addToRevision: Boolean = false) {
+        val completionManager = com.example.domain.CompletionManager(syllabusDao, revisionDao, syncDao)
+
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val subject = syllabusDao.getSubjectById(topic.subjectId)
+            val subjectName = subject?.name ?: "Subject"
+            completionManager.toggleTopicCompletion(topic, subjectName, completed, addToRevision)
         }
     }
 

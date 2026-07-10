@@ -106,6 +106,10 @@ fun TodayExecutionTab(state: PlannerUiState, innerPadding: PaddingValues, viewMo
     // edit mode regardless of whether a plan exists.
     var editMode by remember { mutableStateOf(false) }
 
+    // Add-to-revision prompt: shown when the user marks a subtopic/topic complete.
+    // Holds the entity that was just tapped so the dialog can offer to add a revision.
+    var pendingAddToRevision by remember { mutableStateOf<SubtopicEntity?>(null) }
+
     val plannedSubjects = state.availableSubjects.filter { swt ->
         swt.topics.any { t -> state.selectedTopicIds.contains(t.topic.id) || t.subtopics.any { s -> state.selectedSubtopicIds.contains(s.id) } }
     }
@@ -167,12 +171,12 @@ fun TodayExecutionTab(state: PlannerUiState, innerPadding: PaddingValues, viewMo
                 val title = if (state.activeTabIndex == 0) "Today's Tasks" else "Plan for ${state.selectedDate}"
                 Text(title, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
             }
-            
+
             plannedSubjects.forEach { swt ->
                 item {
                     Text(text = swt.subject.name, color = MaterialTheme.colorScheme.primary, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(bottom = 8.dp))
                 }
-                
+
                 swt.topics.filter { state.selectedTopicIds.contains(it.topic.id) || it.subtopics.any { s -> state.selectedSubtopicIds.contains(s.id) } }.forEach { topicWithSub ->
                     item {
                         Card(
@@ -183,9 +187,9 @@ fun TodayExecutionTab(state: PlannerUiState, innerPadding: PaddingValues, viewMo
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Text(text = topicWithSub.topic.name, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Medium, fontSize = 16.sp)
                                 Spacer(modifier = Modifier.height(8.dp))
-                                
+
                                 val plannedSubtopics = topicWithSub.subtopics.filter { state.selectedSubtopicIds.contains(it.id) }
-                                
+
                                 if (plannedSubtopics.isEmpty()) {
                                     Text("Entire topic selected.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
                                 } else {
@@ -195,7 +199,14 @@ fun TodayExecutionTab(state: PlannerUiState, innerPadding: PaddingValues, viewMo
                                                 .fillMaxWidth()
                                                 .padding(vertical = 4.dp)
                                                 .clip(RoundedCornerShape(8.dp))
-                                                .clickable { viewModel.markSubtopicCompleted(sub, !sub.isCompleted) }
+                                                .clickable {
+                                                    val willComplete = !sub.isCompleted
+                                                    viewModel.markSubtopicCompleted(sub, willComplete)
+                                                    // Only prompt to add revision when marking complete (not when un-marking)
+                                                    if (willComplete) {
+                                                        pendingAddToRevision = sub
+                                                    }
+                                                }
                                                 .padding(8.dp),
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
@@ -207,7 +218,7 @@ fun TodayExecutionTab(state: PlannerUiState, innerPadding: PaddingValues, viewMo
                                             )
                                             Spacer(modifier = Modifier.width(12.dp))
                                             Text(
-                                                text = sub.name, 
+                                                text = sub.name,
                                                 color = if (sub.isCompleted) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onBackground,
                                                 textDecoration = if (sub.isCompleted) androidx.compose.ui.text.style.TextDecoration.LineThrough else null,
                                                 fontSize = 15.sp
@@ -226,9 +237,9 @@ fun TodayExecutionTab(state: PlannerUiState, innerPadding: PaddingValues, viewMo
                     Spacer(modifier = Modifier.height(8.dp))
                     Text("Revisions", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFFF9800), modifier = Modifier.padding(bottom = 8.dp))
                 }
-                
+
                 val plannedRevisions = state.availableRevisions.filter { state.selectedRevisionIds.contains(it.id) }
-                items(plannedRevisions) { rev ->
+                items(plannedRevisions, key = { it.id }) { rev ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -248,7 +259,7 @@ fun TodayExecutionTab(state: PlannerUiState, innerPadding: PaddingValues, viewMo
                         Spacer(modifier = Modifier.width(16.dp))
                         Column {
                             Text(
-                                text = rev.title, 
+                                text = rev.title,
                                 color = if (rev.isCompleted) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onBackground,
                                 textDecoration = if (rev.isCompleted) androidx.compose.ui.text.style.TextDecoration.LineThrough else null,
                                 fontSize = 16.sp,
@@ -260,6 +271,29 @@ fun TodayExecutionTab(state: PlannerUiState, innerPadding: PaddingValues, viewMo
                 }
             }
         }
+    }
+
+    // Add-to-revision dialog: offered when a subtopic is marked complete.
+    pendingAddToRevision?.let { sub ->
+        AlertDialog(
+            onDismissRequest = { pendingAddToRevision = null },
+            title = { Text("Add to Revision?", style = MaterialTheme.typography.titleMedium) },
+            text = {
+                Text("You completed \"${sub.name}\". Add it to your revision schedule for spaced repetition?")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.markSubtopicCompleted(sub, true, addToRevision = true)
+                        pendingAddToRevision = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9800))
+                ) { Text("Add to Revision", color = Color.White) }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingAddToRevision = null }) { Text("Not now") }
+            }
+        )
     }
 }
 
@@ -422,9 +456,13 @@ fun ManagePlanTab(state: PlannerUiState, innerPadding: PaddingValues, viewModel:
 
 /**
  * Inline plan editor shown inside the Today tab when the user taps the
- * "Plan Today's Study" / "Edit Today's Plan" button. Mirrors the structure of
- * [ManagePlanTab] but with a sticky header (title + stats + Done button) so it
- * feels like an inline editor rather than a separate tab.
+ * "Plan Today's Study" / "Edit Today's Plan" button.
+ *
+ * Uses a subject-first drill-down to avoid overwhelming the user with a long
+ * flat list of topics: subjects are shown as cards → tap a subject to see its
+ * topics → tap a topic to expand its subtopics. This keeps the initial list
+ * short (one card per subject) and lets the user drill into exactly the area
+ * they want to plan.
  */
 @Composable
 fun TodayManagePlanTab(
@@ -433,6 +471,10 @@ fun TodayManagePlanTab(
     viewModel: PlannerViewModel,
     onDone: () -> Unit
 ) {
+    // The currently expanded subject id. Only one subject is expanded at a time
+    // so the list stays manageable. null = no subject expanded (show all subjects).
+    var expandedSubjectId by remember { mutableStateOf<String?>(null) }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -456,7 +498,7 @@ fun TodayManagePlanTab(
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
-                        "Pick topics and revisions to commit to today.",
+                        "Tap a subject, then pick topics to commit to today.",
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -512,85 +554,152 @@ fun TodayManagePlanTab(
             }
         }
 
-        // Syllabus topics (expandable subtopics)
+        // === SUBJECT-FIRST DRILL-DOWN ===
+        // When no subject is expanded, show the list of subjects as cards.
+        // When a subject is expanded, show its topics (with expandable subtopics)
+        // and a back button to return to the subject list.
         item {
-            Text(
-                text = "Syllabus Topics",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            if (state.availableSubjects.isEmpty()) {
-                Text("No subjects added yet.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+            if (expandedSubjectId == null) {
+                Text(
+                    text = "Subjects",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                if (state.availableSubjects.isEmpty()) {
+                    Text("No subjects added yet.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(onClick = { expandedSubjectId = null }) {
+                        Icon(Icons.Rounded.ArrowBack, contentDescription = "Back", modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("All Subjects")
+                    }
+                }
+                Text(
+                    text = state.availableSubjects.firstOrNull { it.subject.id == expandedSubjectId }?.subject?.name ?: "Topics",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
             }
         }
 
-        state.availableSubjects.forEach { subjectWithTopics ->
-            item {
-                Text(
-                    text = subjectWithTopics.subject.name,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.padding(bottom = 4.dp, top = 4.dp)
-                )
-            }
-            items(subjectWithTopics.topics.filter { !it.isFullyCompleted }, key = { it.topic.id }) { topicWithSub ->
-                val isSelected = state.selectedTopicIds.contains(topicWithSub.topic.id)
-                var expanded by remember { mutableStateOf(false) }
-
-                Column(modifier = Modifier.fillMaxWidth()) {
+        if (expandedSubjectId == null) {
+            // Show subject cards
+            items(state.availableSubjects, key = { it.subject.id }) { subjectWithTopics ->
+                val topicsPlannedCount = subjectWithTopics.topics.count { t ->
+                    state.selectedTopicIds.contains(t.topic.id) ||
+                        t.subtopics.any { s -> state.selectedSubtopicIds.contains(s.id) }
+                }
+                val incompleteTopics = subjectWithTopics.topics.count { !it.isFullyCompleted }
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                        .clickable { expandedSubjectId = subjectWithTopics.subject.id },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface)
-                            .clickable { viewModel.toggleTopicSelection(topicWithSub.topic.id) }
-                            .padding(16.dp),
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = if (isSelected) Icons.Rounded.CheckCircle else Icons.Rounded.RadioButtonUnchecked,
-                            contentDescription = null,
-                            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(text = topicWithSub.topic.name, color = MaterialTheme.colorScheme.onBackground, fontSize = 16.sp, modifier = Modifier.weight(1f))
-                        if (topicWithSub.subtopics.isNotEmpty()) {
-                            IconButton(onClick = { expanded = !expanded }) {
-                                Icon(if (expanded) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown, contentDescription = "Expand")
-                            }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = subjectWithTopics.subject.name,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "$incompleteTopics topics available" +
+                                    if (topicsPlannedCount > 0) " • $topicsPlannedCount planned" else "",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 12.sp
+                            )
                         }
+                        Icon(
+                            Icons.Rounded.ChevronRight,
+                            contentDescription = "Open",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
-                    if (expanded && topicWithSub.subtopics.isNotEmpty()) {
-                        Column(modifier = Modifier.padding(start = 32.dp, top = 8.dp, bottom = 8.dp)) {
-                            topicWithSub.subtopics.filter { !it.isCompleted }.forEach { subtopic ->
-                                val subSelected = state.selectedSubtopicIds.contains(subtopic.id)
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .clickable { viewModel.toggleSubtopicSelection(subtopic.id) }
-                                        .padding(vertical = 8.dp, horizontal = 12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = if (subSelected) Icons.Rounded.CheckBox else Icons.Rounded.CheckBoxOutlineBlank,
-                                        contentDescription = null,
-                                        tint = if (subSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Text(text = subtopic.name, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f), fontSize = 14.sp)
+                }
+            }
+        } else {
+            // Show topics for the expanded subject (with expandable subtopics)
+            val expandedSubject = state.availableSubjects.firstOrNull { it.subject.id == expandedSubjectId }
+            if (expandedSubject != null) {
+                val topicsToShow = expandedSubject.topics.filter { !it.isFullyCompleted }
+                if (topicsToShow.isEmpty()) {
+                    item {
+                        Text("All topics in this subject are completed.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                    }
+                } else {
+                    items(topicsToShow, key = { it.topic.id }) { topicWithSub ->
+                        val isSelected = state.selectedTopicIds.contains(topicWithSub.topic.id)
+                        var topicExpanded by remember { mutableStateOf(false) }
+
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface)
+                                    .clickable { viewModel.toggleTopicSelection(topicWithSub.topic.id) }
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = if (isSelected) Icons.Rounded.CheckCircle else Icons.Rounded.RadioButtonUnchecked,
+                                    contentDescription = null,
+                                    tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Text(text = topicWithSub.topic.name, color = MaterialTheme.colorScheme.onBackground, fontSize = 16.sp, modifier = Modifier.weight(1f))
+                                if (topicWithSub.subtopics.isNotEmpty()) {
+                                    IconButton(onClick = { topicExpanded = !topicExpanded }) {
+                                        Icon(if (topicExpanded) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown, contentDescription = "Expand")
+                                    }
+                                }
+                            }
+                            if (topicExpanded && topicWithSub.subtopics.isNotEmpty()) {
+                                Column(modifier = Modifier.padding(start = 32.dp, top = 8.dp, bottom = 8.dp)) {
+                                    topicWithSub.subtopics.filter { !it.isCompleted }.forEach { subtopic ->
+                                        val subSelected = state.selectedSubtopicIds.contains(subtopic.id)
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .clickable { viewModel.toggleSubtopicSelection(subtopic.id) }
+                                                .padding(vertical = 8.dp, horizontal = 12.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                imageVector = if (subSelected) Icons.Rounded.CheckBox else Icons.Rounded.CheckBoxOutlineBlank,
+                                                contentDescription = null,
+                                                tint = if (subSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Text(text = subtopic.name, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f), fontSize = 14.sp)
+                                        }
+                                    }
                                 }
                             }
                         }
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
             }
         }
 
-        // Revisions section
+        // Revisions section (always visible at the bottom)
         item {
             Spacer(modifier = Modifier.height(8.dp))
             Text(

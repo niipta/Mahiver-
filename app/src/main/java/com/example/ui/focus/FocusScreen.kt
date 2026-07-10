@@ -64,6 +64,7 @@ fun FocusScreen(
     val selectedSubtopicId by viewModel.selectedSubtopicId.collectAsStateWithLifecycle()
     val customTaskTitle by viewModel.customTaskTitle.collectAsStateWithLifecycle()
     val isSessionCompleted by viewModel.isSessionCompleted.collectAsStateWithLifecycle()
+    val todayPlan by viewModel.todayPlan.collectAsStateWithLifecycle()
     val context = androidx.compose.ui.platform.LocalContext.current
     val settingsRepository = remember { com.example.data.SettingsRepository.getInstance(context) }
     val autoEnableDnd by settingsRepository.autoEnableDnd.collectAsStateWithLifecycle()
@@ -198,8 +199,16 @@ fun FocusScreen(
         
         if (showTopicSelector) {
             // Topic AND subtopic are both selectable.
+            // Pass today's planned topic/subtopic IDs so the sheet can show
+            // them first in a "Today's Plan" section.
+            val plannedTopicIds = todayPlan?.plannedTopicIds
+                ?.split(",")?.filter { it.isNotBlank() }?.toSet() ?: emptySet()
+            val plannedSubtopicIds = todayPlan?.plannedSubtopicIds
+                ?.split(",")?.filter { it.isNotBlank() }?.toSet() ?: emptySet()
             TopicSelectionSheet(
                 subjectsWithTopics = subjectsWithTopics,
+                plannedTopicIds = plannedTopicIds,
+                plannedSubtopicIds = plannedSubtopicIds,
                 onDismiss = { showTopicSelector = false },
                 onTopicSelected = { subjectId, topicId, subtopicId ->
                     viewModel.setTargetTopic(subjectId, topicId, subtopicId, null)
@@ -705,6 +714,8 @@ fun StatItem(value: String, label: String, modifier: Modifier = Modifier) {
 @Composable
 fun TopicSelectionSheet(
     subjectsWithTopics: List<com.example.data.SubjectWithTopics>,
+    plannedTopicIds: Set<String> = emptySet(),
+    plannedSubtopicIds: Set<String> = emptySet(),
     onDismiss: () -> Unit,
     onTopicSelected: (subjectId: String, topicId: String, subtopicId: String?) -> Unit,
     onCustomTask: (String) -> Unit
@@ -725,7 +736,7 @@ fun TopicSelectionSheet(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                "Tap a topic to focus on the whole topic, or expand it to pick a specific subtopic.",
+                "Today's planned topics appear first. Tap a topic to focus on it, or expand to pick a subtopic.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -767,6 +778,107 @@ fun TopicSelectionSheet(
             LazyColumn(
                 modifier = Modifier.fillMaxWidth().heightIn(max = 460.dp)
             ) {
+                // === TODAY'S PLAN SECTION (shown first) ===
+                // Collect all topics/subtopics that are in today's plan and show
+                // them at the top so the user can quickly start a focus session
+                // on something they already committed to today.
+                val plannedItems = mutableListOf<Triple<String, String, String?>>() // (subjectId, topicId, subtopicId?)
+                val plannedLabels = mutableListOf<String>() // display labels
+                subjectsWithTopics.forEach { subject ->
+                    subject.topics.forEach { topic ->
+                        // Whole topic planned
+                        if (plannedTopicIds.contains(topic.topic.id)) {
+                            plannedItems.add(Triple(subject.subject.id, topic.topic.id, null))
+                            plannedLabels.add("${topic.topic.name} (${subject.subject.name})")
+                        }
+                        // Individual subtopics planned
+                        topic.subtopics.forEach { subtopic ->
+                            if (plannedSubtopicIds.contains(subtopic.id)) {
+                                plannedItems.add(Triple(subject.subject.id, topic.topic.id, subtopic.id))
+                                plannedLabels.add("${subtopic.name} (${subject.subject.name})")
+                            }
+                        }
+                    }
+                }
+
+                if (plannedItems.isNotEmpty() && query.isBlank()) {
+                    item {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        ) {
+                            Icon(
+                                Icons.Rounded.Today,
+                                contentDescription = null,
+                                tint = MahirColors.gold(),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                "Today's Plan (${plannedItems.size})",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MahirColors.gold(),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                    items(plannedItems.size, key = { "planned_${plannedItems[it].second}_${plannedItems[it].third ?: ""}" }) { index ->
+                        val (subjId, topId, subId) = plannedItems[index]
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 3.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(MahirColors.gold().copy(alpha = 0.08f))
+                                .clickable { onTopicSelected(subjId, topId, subId) }
+                                .padding(horizontal = 12.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .background(MahirColors.gold(), CircleShape)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = plannedLabels[index],
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Icon(
+                                Icons.Rounded.ChevronRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .background(MaterialTheme.colorScheme.onSurfaceVariant, CircleShape)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                "All Topics",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+
+                // === ALL TOPICS SECTION ===
                 subjectsWithTopics.forEach { subject ->
                     val filtered = subject.topics.filter { topicWithSubtopics ->
                         query.isBlank() ||
