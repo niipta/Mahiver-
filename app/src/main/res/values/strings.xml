@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">MahirVerse</string>
+    <string name="app_widget_focus_timer_description">Live Pomodoro focus timer</string>
+    <string name="app_widget_planner_description">Today\'s study targets</string>
+    <string name="app_widget_analytics_description">Daily study hours and streak</string>
+    <string name="app_widget_revision_description">Quick access to pending revisions</string>
+</resources>

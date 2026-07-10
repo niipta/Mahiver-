@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1098634430891",
+    "project_id": "mahirverse-1d7ff",
+    "storage_bucket": "mahirverse-1d7ff.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1098634430891:android:1e10b5056c13af8f33eaee",
+        "android_client_info": {
+          "package_name": "com.aistudio.mahirverse.xjklqa"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDQ3BLcTVYUdPONJDyicNyn4Ij3jUH-mSU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
