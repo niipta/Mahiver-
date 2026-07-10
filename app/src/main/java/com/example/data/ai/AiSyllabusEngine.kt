@@ -1,7 +1,6 @@
 package com.example.data.ai
 
 import com.example.data.SyllabusJson
-import com.example.data.SyllabusImporter
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -20,7 +19,7 @@ sealed class AiSyllabusResult {
  * from a free-text prompt like "JEE Main Physics" or "UPSC GS Paper 1".
  *
  * The generated JSON matches the [SyllabusJson] schema so it can be imported
- * directly via [SyllabusImporter.import].
+ * directly via [com.example.data.SyllabusImporter.import].
  */
 class AiSyllabusEngine(private val getApiKey: () -> String) {
 
@@ -75,13 +74,7 @@ class AiSyllabusEngine(private val getApiKey: () -> String) {
         )
 
         return try {
-            val response = try {
-                RetrofitClient.service.generateContent(apiKey, "gemini-2.0-flash", request)
-            } catch (e: retrofit2.HttpException) {
-                if (e.code() == 404 || e.code() == 400) {
-                    RetrofitClient.service.generateContent(apiKey, "gemini-1.5-flash", request)
-                } else throw e
-            }
+            val response = AiHelper.callWithRetry(apiKey, request)
 
             val jsonText = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
             if (jsonText.isNullOrBlank()) {
@@ -103,10 +96,8 @@ class AiSyllabusEngine(private val getApiKey: () -> String) {
             }
 
             AiSyllabusResult.Success(syllabus)
-        } catch (e: retrofit2.HttpException) {
-            AiSyllabusResult.Error("AI service error (${e.code()})", retryable = e.code() in 500..599)
-        } catch (e: java.io.IOException) {
-            AiSyllabusResult.Error("Network error — check your internet", retryable = true)
+        } catch (e: AiCallException) {
+            AiSyllabusResult.Error(e.message, retryable = e.code == 429 || e.code == -1 || e.code in 500..599)
         } catch (e: Throwable) {
             AiSyllabusResult.Error("Unexpected error: ${e.message ?: "unknown"}", retryable = false)
         }
