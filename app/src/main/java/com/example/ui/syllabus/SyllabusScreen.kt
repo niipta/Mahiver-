@@ -61,8 +61,10 @@ fun SyllabusScreen(
 ) {
     val haptics = com.example.util.rememberMahirHaptics()
     val subjects by viewModel.subjects.collectAsStateWithLifecycle()
+    val aiLoading by viewModel.aiLoading.collectAsStateWithLifecycle()
     var showAddSubjectDialog by remember { mutableStateOf(false) }
     var showTemplatesSheet by remember { mutableStateOf(false) }
+    var showAiDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var subjectToDelete by remember { mutableStateOf<SubjectEntity?>(null) }
     var searchQuery by remember { mutableStateOf("") }
@@ -117,6 +119,16 @@ fun SyllabusScreen(
                 is SyllabusUiEvent.ImportError -> {
                     haptics.reject()
                     snackbarHostState.showSnackbar("Import failed: ${event.message}")
+                }
+                is SyllabusUiEvent.AiGenerateSuccess -> {
+                    haptics.confirm()
+                    snackbarHostState.showSnackbar(
+                        "AI generated ${event.subjects} subjects, ${event.topics} topics, ${event.subtopics} subtopics"
+                    )
+                }
+                is SyllabusUiEvent.AiGenerateError -> {
+                    haptics.reject()
+                    snackbarHostState.showSnackbar("AI error: ${event.message}")
                 }
             }
         }
@@ -193,6 +205,7 @@ fun SyllabusScreen(
                             onAddSubject = { showAddSubjectDialog = true },
                             onImportJson = { jsonPickerLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) },
                             onPickTemplate = { showTemplatesSheet = true },
+                            onAiGenerate = { showAiDialog = true },
                             onSearchClick = { isSearchActive = true }
                         )
                     }
@@ -298,6 +311,17 @@ fun SyllabusScreen(
                 onPickJsonFile = {
                     showTemplatesSheet = false
                     jsonPickerLauncher.launch(arrayOf("application/json", "text/plain", "*/*"))
+                }
+            )
+        }
+
+        // === AI Generate dialog ===
+        if (showAiDialog) {
+            AiSyllabusDialog(
+                loading = aiLoading,
+                onDismiss = { if (!aiLoading) showAiDialog = false },
+                onGenerate = { prompt ->
+                    viewModel.generateSyllabusWithAi(context, prompt)
                 }
             )
         }
@@ -408,6 +432,7 @@ private fun SyllabusHeader(
     onAddSubject: () -> Unit,
     onImportJson: () -> Unit,
     onPickTemplate: () -> Unit,
+    onAiGenerate: () -> Unit,
     onSearchClick: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -441,13 +466,13 @@ private fun SyllabusHeader(
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
-        // Three primary action buttons in their own Row, clearly separated from Exams
+        // Four primary action buttons in their own Row
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             HeaderActionButton(
-                text = "Add Subject",
+                text = "Add",
                 icon = Icons.Rounded.Add,
                 isPrimary = true,
                 onClick = onAddSubject,
@@ -460,7 +485,13 @@ private fun SyllabusHeader(
                 modifier = Modifier.weight(1f)
             )
             HeaderActionButton(
-                text = "Import JSON",
+                text = "AI Gen",
+                icon = Icons.Rounded.AutoAwesome,
+                onClick = onAiGenerate,
+                modifier = Modifier.weight(1f)
+            )
+            HeaderActionButton(
+                text = "Import",
                 icon = Icons.Rounded.FileUpload,
                 onClick = onImportJson,
                 modifier = Modifier.weight(1f)
@@ -1259,4 +1290,85 @@ fun ExamsSection(viewModel: SyllabusViewModel, snackbarHostState: SnackbarHostSt
             dismissButton = { TextButton(onClick = { examToDelete = null }) { Text("Cancel") } }
         )
     }
+}
+
+// ============================================================
+// AI SYLLABUS GENERATION DIALOG
+// ============================================================
+@Composable
+private fun AiSyllabusDialog(
+    loading: Boolean,
+    onDismiss: () -> Unit,
+    onGenerate: (String) -> Unit
+) {
+    var prompt by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Rounded.AutoAwesome, contentDescription = null, tint = StatColors.purple())
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("AI Syllabus Generator", style = MaterialTheme.typography.titleMedium)
+            }
+        },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    "Describe what you want a syllabus for. AI will generate subjects, topics & subtopics automatically.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = prompt,
+                    onValueChange = { prompt = it },
+                    label = { Text("e.g. JEE Main Physics, UPSC GS, Class 12 Biology") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !loading,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = StatColors.purple(),
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent
+                    )
+                )
+                if (loading) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = StatColors.purple()
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "AI is generating your syllabus…",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onGenerate(prompt) },
+                colors = ButtonDefaults.buttonColors(containerColor = StatColors.purple()),
+                enabled = !loading && prompt.isNotBlank()
+            ) {
+                Text("Generate", color = Color.White)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !loading) {
+                Text("Cancel")
+            }
+        },
+        containerColor = MahirColors.cardBackground()
+    )
 }

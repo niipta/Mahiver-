@@ -34,6 +34,8 @@ sealed class SyllabusUiEvent {
     data class TemplateImportSuccess(val templateName: String, val subjects: Int, val topics: Int, val subtopics: Int) : SyllabusUiEvent()
     data class ShowRevisionPrompt(val topicId: String, val topicName: String, val subjectName: String) : SyllabusUiEvent()
     data class ShowRevisionPromptSubtopic(val subtopicId: String, val subtopicName: String, val subjectName: String) : SyllabusUiEvent()
+    data class AiGenerateSuccess(val subjects: Int, val topics: Int, val subtopics: Int) : SyllabusUiEvent()
+    data class AiGenerateError(val message: String) : SyllabusUiEvent()
 }
 
 @HiltViewModel
@@ -43,11 +45,16 @@ class SyllabusViewModel @Inject constructor(
     private val revisionDao: com.example.data.RevisionDao,
     private val revisionRepository: RevisionRepository,
     private val examDao: ExamDao,
-    private val syncDao: SyncDao
+    private val syncDao: SyncDao,
+    private val settingsRepository: com.example.data.SettingsRepository
 ) : ViewModel() {
 
     private val _uiEvents = MutableSharedFlow<SyllabusUiEvent>(extraBufferCapacity = 4)
     val uiEvents: SharedFlow<SyllabusUiEvent> = _uiEvents.asSharedFlow()
+
+    // AI syllabus generation loading state
+    private val _aiLoading = kotlinx.coroutines.flow.MutableStateFlow(false)
+    val aiLoading: StateFlow<Boolean> = _aiLoading.asStateFlow()
 
     val exams: StateFlow<List<com.example.data.ExamEntity>> = examDao.getAllExams()
         .stateIn(
@@ -298,6 +305,41 @@ class SyllabusViewModel @Inject constructor(
                 )
             } catch (e: Throwable) {
                 _uiEvents.tryEmit(SyllabusUiEvent.ImportError(e.message ?: "Unknown error"))
+            }
+        }
+    }
+
+    // ---------- AI Syllabus Generation ----------
+
+    /**
+     * Generates a syllabus from a free-text prompt using Gemini AI, then
+     * imports it into the database. Reuses [SyllabusImporter.import] so the
+     * generated JSON goes through the same pipeline as manual imports.
+     */
+    fun generateSyllabusWithAi(context: Context, prompt: String) {
+        if (_aiLoading.value) return
+        _aiLoading.value = true
+        viewModelScope.launch {
+            try {
+                val engine = com.example.data.ai.AiSyllabusEngine {
+                    settingsRepository.geminiApiKey.value
+                }
+                when (val result = engine.generateSyllabus(prompt)) {
+                    is com.example.data.ai.AiSyllabusResult.Success -> {
+                        val (s, t, sub) = SyllabusImporter.import(context, result.syllabus)
+                        _uiEvents.tryEmit(SyllabusUiEvent.AiGenerateSuccess(s, t, sub))
+                    }
+                    is com.example.data.ai.AiSyllabusResult.Error -> {
+                        _uiEvents.tryEmit(SyllabusUiEvent.AiGenerateError(result.message))
+                    }
+                    is com.example.data.ai.AiSyllabusResult.NoApiKey -> {
+                        _uiEvents.tryEmit(SyllabusUiEvent.AiGenerateError("No API key configured. Add your Gemini API key in Settings → AI & Intelligence."))
+                    }
+                }
+            } catch (e: Throwable) {
+                _uiEvents.tryEmit(SyllabusUiEvent.AiGenerateError(e.message ?: "Unknown error"))
+            } finally {
+                _aiLoading.value = false
             }
         }
     }

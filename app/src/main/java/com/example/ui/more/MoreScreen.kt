@@ -33,6 +33,7 @@ import com.example.ui.components.MahirCard
 import com.example.ui.components.SectionTitle
 import com.example.ui.theme.Dimens
 import com.example.ui.theme.MahirColors
+import com.example.ui.theme.StatColors
 import com.example.util.rememberMahirHaptics
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,9 +50,11 @@ fun MoreScreen(navController: NavController, viewModel: MoreViewModel = hiltView
     val hapticsEnabled by viewModel.hapticsEnabled.collectAsStateWithLifecycle()
     val dailyGoalMinutes by viewModel.dailyGoalMinutes.collectAsStateWithLifecycle()
     val ambientSoundEnabled by viewModel.ambientSoundEnabled.collectAsStateWithLifecycle()
+    val geminiApiKey by viewModel.geminiApiKey.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var showNameDialog by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
+    var showApiKeyDialog by remember { mutableStateOf(false) }
     var showDndPrompt by remember { mutableStateOf(false) }
     var showDailyGoalDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
@@ -98,6 +101,22 @@ fun MoreScreen(navController: NavController, viewModel: MoreViewModel = hiltView
                 showResetDialog = false
             },
             onDismiss = { showResetDialog = false }
+        )
+    }
+    if (showApiKeyDialog) {
+        ApiKeyDialog(
+            currentKey = geminiApiKey,
+            onSave = {
+                haptics.confirm()
+                viewModel.updateApiKey(it)
+                showApiKeyDialog = false
+            },
+            onClear = {
+                haptics.reject()
+                viewModel.clearApiKey()
+                showApiKeyDialog = false
+            },
+            onDismiss = { showApiKeyDialog = false }
         )
     }
 
@@ -204,6 +223,22 @@ fun MoreScreen(navController: NavController, viewModel: MoreViewModel = hiltView
                         onClick = {
                             haptics.tap()
                             navController.navigate("history")
+                        }
+                    )
+                }
+            }
+
+            // === AI & Intelligence ===
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)) {
+                    SectionTitle("AI & Intelligence")
+                    MoreMenuItem(
+                        icon = Icons.Rounded.AutoAwesome,
+                        title = "Gemini API Key",
+                        subtitle = if (geminiApiKey.isBlank()) "Not configured — AI features disabled" else "Configured (${geminiApiKey.take(8)}…)",
+                        onClick = {
+                            haptics.tap()
+                            showApiKeyDialog = true
                         }
                     )
                 }
@@ -765,6 +800,82 @@ fun ResetAppDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text("Cancel", color = MaterialTheme.colorScheme.onBackground)
+            }
+        },
+        containerColor = MahirColors.cardBackground(),
+        shape = RoundedCornerShape(Dimens.cardRadius)
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ApiKeyDialog(
+    currentKey: String,
+    onSave: (String) -> Unit,
+    onClear: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    var keyInput by remember { mutableStateOf(currentKey) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Rounded.AutoAwesome, contentDescription = null, tint = StatColors.purple())
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Gemini API Key", style = MaterialTheme.typography.titleMedium)
+            }
+        },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    "Paste your Google Gemini API key to enable AI features (Smart Plan, Syllabus Auto-Generate).",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = keyInput,
+                    onValueChange = { keyInput = it },
+                    label = { Text("API Key") },
+                    placeholder = { Text("AIza…") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = StatColors.purple(),
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent
+                    )
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    "Get a free key at: aistudio.google.com/apikey",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onSave(keyInput.trim()) },
+                colors = ButtonDefaults.buttonColors(containerColor = StatColors.purple()),
+                shape = RoundedCornerShape(Dimens.cardRadiusSm),
+                enabled = keyInput.isNotBlank()
+            ) {
+                Text("Save", color = Color.White)
+            }
+        },
+        dismissButton = {
+            Row {
+                if (currentKey.isNotBlank()) {
+                    TextButton(onClick = onClear) {
+                        Text("Clear", color = MaterialTheme.colorScheme.error)
+                    }
+                }
+                TextButton(onClick = onDismiss) {
+                    Text("Cancel", color = MaterialTheme.colorScheme.onBackground)
+                }
             }
         },
         containerColor = MahirColors.cardBackground(),

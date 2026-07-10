@@ -27,6 +27,9 @@ class MoreViewModel @Inject constructor(
     val appLockEnabled: StateFlow<Boolean> = settings.appLockEnabled
     val streakFreezesAvailable: StateFlow<Int> = settings.streakFreezesAvailable
 
+    // AI / Gemini API key
+    val geminiApiKey: StateFlow<String> = settings.geminiApiKey
+
     fun updateUserName(name: String) = settings.updateUserName(name)
     fun updateThemeMode(mode: String) = settings.updateThemeMode(mode)
     fun updateAmoledMode(enabled: Boolean) = settings.updateAmoledMode(enabled)
@@ -40,6 +43,10 @@ class MoreViewModel @Inject constructor(
     fun updateAmbientSoundEnabled(enabled: Boolean) = settings.updateAmbientSoundEnabled(enabled)
     fun updateAmbientSoundType(type: String) = settings.updateAmbientSoundType(type)
     fun updateAppLockEnabled(enabled: Boolean) = settings.updateAppLockEnabled(enabled)
+
+    // AI key management
+    fun updateApiKey(key: String) = settings.updateApiKey(key)
+    fun clearApiKey() = settings.clearApiKey()
 
     fun requestReset() = settings.markResetRequested()
 }

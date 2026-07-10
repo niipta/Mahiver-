@@ -106,16 +106,29 @@ fun HomeScreen(
                     }
                 }
 
+                // === AI SMART PLAN SECTION ===
+                item {
+                    AnimatedEntry(4) {
+                        AiSmartPlanSection(
+                            state = state,
+                            onGenerate = {
+                                haptics.confirm()
+                                viewModel.generateSmartPlan()
+                            }
+                        )
+                    }
+                }
+
                 if (state.exams.isNotEmpty()) {
                     item {
-                        AnimatedEntry(4) {
+                        AnimatedEntry(5) {
                             UpcomingExamsCard(exams = state.exams.take(3))
                         }
                     }
                 }
 
                 item {
-                    AnimatedEntry(5) {
+                    AnimatedEntry(6) {
                         RecentActivitySection(state, navController)
                     }
                 }
@@ -515,5 +528,214 @@ fun ActivityRow(topicName: String, subjectName: String, timeText: String) {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+    }
+}
+
+// ============================================================
+// AI SMART PLAN SECTION
+// ============================================================
+@Composable
+fun AiSmartPlanSection(
+    state: HomeUiState,
+    onGenerate: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SectionTitle("AI Smart Plan")
+            Surface(
+                onClick = onGenerate,
+                shape = RoundedCornerShape(12.dp),
+                color = StatColors.purple(),
+                enabled = !state.aiPlanLoading
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (state.aiPlanLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(14.dp),
+                            strokeWidth = 2.dp,
+                            color = Color.White
+                        )
+                    } else {
+                        Icon(
+                            Icons.Rounded.AutoAwesome,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        if (state.aiPlanLoading) "Generating…" else "Generate",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.White,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(Dimens.spacingSm))
+
+        when {
+            // Error state
+            state.error != null -> {
+                MahirCard {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Rounded.ErrorOutline,
+                            contentDescription = null,
+                            tint = StatColors.red(),
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            state.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+
+            // Loading state with no prior results
+            state.aiPlanLoading && state.suggestedTopics.isEmpty() -> {
+                MahirCard {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = StatColors.purple()
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            "AI is analysing your study data…",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            // Results available
+            state.suggestedTopics.isNotEmpty() || state.priorities.isNotBlank() -> {
+                MahirCard {
+                    Column(modifier = Modifier.padding(Dimens.cardPadding), verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)) {
+                        // Priorities message
+                        if (state.priorities.isNotBlank() && state.priorities != "Review your pending tasks") {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Rounded.Lightbulb, contentDescription = null, tint = StatColors.amber(), modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    state.priorities,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+
+                        // Suggested topics
+                        if (state.suggestedTopics.isNotEmpty()) {
+                            Text(
+                                "Suggested Topics",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            state.suggestedTopics.forEach { topic ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(6.dp)
+                                            .background(StatColors.purple(), CircleShape)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        topic,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onBackground
+                                    )
+                                }
+                            }
+                        }
+
+                        // Weak topics
+                        if (state.weakTopics.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                "Weak Topics Detected",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = StatColors.red(),
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            state.weakTopics.forEach { topic ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(Icons.Rounded.Warning, contentDescription = null, tint = StatColors.red(), modifier = Modifier.size(14.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        topic,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Default empty state
+            else -> {
+                MahirCard {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Rounded.AutoAwesome,
+                            contentDescription = null,
+                            tint = StatColors.purple(),
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Get an AI-powered study plan",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                "Analyses your syllabus, revisions & focus time",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }
