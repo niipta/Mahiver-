@@ -41,6 +41,7 @@ import com.example.ui.components.MahirCard
 import com.example.ui.theme.*
 import kotlinx.coroutines.delay
 import androidx.compose.ui.text.style.TextAlign
+import android.content.Intent
 import kotlinx.coroutines.launch
 import com.example.data.SubjectWithTopics
 import com.example.data.FocusSessionEntity
