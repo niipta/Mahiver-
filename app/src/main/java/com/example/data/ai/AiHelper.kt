@@ -15,15 +15,17 @@ import retrofit2.HttpException
 object AiHelper {
 
     /**
-     * Models to try in order. gemini-1.5-flash is listed first because it's the
-     * most widely available on free-tier API keys. gemini-2.0-flash may return
-     * 404 on older keys. The `-latest` aliases always point to the newest version.
+     * Models to try in order. The user's preferred models are listed first:
+     * gemini-3.1-flash-lite (primary) and gemini-2.5-flash (secondary).
+     * Older models are kept as fallbacks for keys that don't have the newer
+     * models enabled yet.
      */
     private val MODEL_CHAIN = listOf(
-        "gemini-1.5-flash-latest",
-        "gemini-1.5-flash",
+        "gemini-3.1-flash-lite",
+        "gemini-2.5-flash",
         "gemini-2.0-flash",
         "gemini-2.0-flash-lite",
+        "gemini-1.5-flash",
         "gemini-1.5-flash-8b"
     )
 
