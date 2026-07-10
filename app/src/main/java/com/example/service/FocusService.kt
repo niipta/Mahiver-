@@ -475,8 +475,6 @@ class FocusService : Service() {
             .setContentIntent(pendingIntent)
             .setOngoing(true)
             .setSilent(true)
-            .setColor(android.graphics.Color.parseColor("#090A0F"))
-            .setColorized(true)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
         val actionsList = mutableListOf<androidx.core.app.NotificationCompat.Action>()
@@ -522,15 +520,15 @@ class FocusService : Service() {
             builder.setProgress(maxS, elapsed, false)
             
             if (sessionType == SessionType.FOCUS) {
-                builder.setContentTitle("🔥 Deep Focus Active")
-                builder.setContentText("⏱ $timeString Remaining")
-                
+                builder.setContentTitle("⏱ $timeString • Deep Focus")
+                builder.setContentText(hierarchy.replace("\n", " → "))
+
                 val bigText = "⏱ $timeString Remaining\n\n$hierarchy\n\n📊 Progress: Session $focusSessionCount of 4"
                 builder.setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
             } else {
-                builder.setContentTitle("☕ Break Time")
-                builder.setContentText("⏱ $timeString Remaining")
-                
+                builder.setContentTitle("⏱ $timeString • Break")
+                builder.setContentText("Relax and recharge")
+
                 val bigText = "⏱ $timeString Remaining\nRelax and recharge.\n\nPrevious Topic:\n$hierarchy"
                 builder.setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
             }
@@ -561,30 +559,11 @@ class FocusService : Service() {
             actionsList.add(NotificationCompat.Action(android.R.drawable.ic_menu_close_clear_cancel, "Stop", stopPending))
             
             compactActions = intArrayOf(1, 2)
-            
-            mediaSession?.let { session ->
-                val title = if (sessionType == SessionType.FOCUS) "Deep Focus" else "Break Time"
-                
-                val metadata = android.support.v4.media.MediaMetadataCompat.Builder()
-                    .putString(android.support.v4.media.MediaMetadataCompat.METADATA_KEY_TITLE, title)
-                    .putString(android.support.v4.media.MediaMetadataCompat.METADATA_KEY_ARTIST, "$sNameF - $tNameF")
-                    .putLong(android.support.v4.media.MediaMetadataCompat.METADATA_KEY_DURATION, maxSeconds * 1000L)
-                    .build()
-                session.setMetadata(metadata)
-                
-                val state = if (timerState == TimerState.RUNNING) android.support.v4.media.session.PlaybackStateCompat.STATE_PLAYING else android.support.v4.media.session.PlaybackStateCompat.STATE_PAUSED
-                val playbackState = android.support.v4.media.session.PlaybackStateCompat.Builder()
-                    .setState(state, elapsed * 1000L, 1f)
-                    .setActions(android.support.v4.media.session.PlaybackStateCompat.ACTION_PLAY_PAUSE or android.support.v4.media.session.PlaybackStateCompat.ACTION_STOP)
-                    .build()
-                session.setPlaybackState(playbackState)
-                
-                builder.setStyle(
-                    androidx.media.app.NotificationCompat.MediaStyle()
-                        .setMediaSession(session.sessionToken)
-                        .setShowActionsInCompactView(*compactActions)
-                )
-            }
+
+            // NOTE: MediaStyle removed — it was hiding the timer text on many devices.
+            // BigTextStyle (set above) shows the timer + subject hierarchy clearly.
+            // The mediaSession is kept active for lock-screen controls but no longer
+            // overrides the notification style.
         }
 
         for (action in actionsList) {

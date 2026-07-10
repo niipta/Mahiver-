@@ -14,11 +14,16 @@ import retrofit2.HttpException
  */
 object AiHelper {
 
-    /** Models to try in order. gemini-2.0-flash is primary; others are fallbacks. */
+    /**
+     * Models to try in order. gemini-1.5-flash is listed first because it's the
+     * most widely available on free-tier API keys. gemini-2.0-flash may return
+     * 404 on older keys. The `-latest` aliases always point to the newest version.
+     */
     private val MODEL_CHAIN = listOf(
+        "gemini-1.5-flash-latest",
+        "gemini-1.5-flash",
         "gemini-2.0-flash",
         "gemini-2.0-flash-lite",
-        "gemini-1.5-flash",
         "gemini-1.5-flash-8b"
     )
 
@@ -91,7 +96,7 @@ object AiHelper {
         400 -> "Bad request (400). Model ko request samajh nahi aayi."
         401 -> "Invalid API key (401). Settings me sahi Gemini API key daalo."
         403 -> "Access forbidden (403). API key me permission nahi hai ya billing disabled hai."
-        404 -> "Model not found (404). Ye model ab available nahi hai."
+        404 -> "Model not found (404). Aapki API key me koi bhi model available nahi hai. Nayi key banao aistudio.google.com/apikey pe."
         in 500..599 -> "Gemini server error ($code). Thodi der baad try karo."
         -1 -> "Network error. Internet connection check karo."
         else -> "AI service error ($code)."

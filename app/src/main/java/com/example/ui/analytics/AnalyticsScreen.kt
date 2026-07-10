@@ -302,7 +302,7 @@ fun MainChartCard(data: List<DailyStudyTime>, maxValue: Float, selectedRange: St
                 )
             }
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             // Segmented control
             Row(
                 modifier = Modifier
@@ -330,68 +330,92 @@ fun MainChartCard(data: List<DailyStudyTime>, maxValue: Float, selectedRange: St
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             val barColor = MahirColors.gold()
             val trackColor = MaterialTheme.colorScheme.outlineVariant
-            
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(160.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.Bottom
-            ) {
-                if (data.isEmpty()) {
-                    com.example.ui.components.EmptyState(
-                        icon = Icons.Rounded.BarChart,
-                        title = "No data yet",
-                        subtitle = "Complete focus sessions to see your analytics"
-                    )
-                } else {
-                    data.forEach { day ->
-                        val ratio = if (maxValue > 0) (day.minutes / maxValue).coerceIn(0f, 1f) else 0f
-                        val animatedRatio by animateFloatAsState(
-                            targetValue = ratio,
-                            animationSpec = tween(800, easing = FastOutSlowInEasing),
-                            label = "barRatio"
+
+            if (data.isEmpty()) {
+                // Empty state OUTSIDE the chart Row to avoid layout constraint crashes
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(160.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Rounded.BarChart, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f), modifier = Modifier.size(40.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("No data yet", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Complete focus sessions to see analytics", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            } else {
+                // Canvas-based bar chart — handles any number of bars (7, 4, or 13)
+                // without layout weight issues. Each bar is drawn proportionally.
+                val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                val chartHeight = 160.dp
+
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(chartHeight)
+                ) {
+                    val barCount = data.size
+                    if (barCount == 0) return@Canvas
+
+                    val totalWidth = size.width
+                    val totalHeight = size.height
+                    val labelAreaHeight = 24.dp.toPx()
+                    val chartAreaHeight = totalHeight - labelAreaHeight
+                    val barSpacing = 4.dp.toPx()
+                    val totalSpacing = barSpacing * (barCount + 1)
+                    val barWidth = ((totalWidth - totalSpacing) / barCount).coerceAtLeast(2.dp.toPx())
+                    val cornerRadius = CornerRadius(8.dp.toPx(), 8.dp.toPx())
+
+                    data.forEachIndexed { index, day ->
+                        val ratio = if (maxValue > 0f) (day.minutes / maxValue).coerceIn(0f, 1f) else 0f
+                        val barHeight = chartAreaHeight * ratio
+                        val x = barSpacing + index * (barWidth + barSpacing)
+                        val y = chartAreaHeight - barHeight
+
+                        // Background track (full height)
+                        drawRoundRect(
+                            color = trackColor,
+                            topLeft = Offset(x, 0f),
+                            size = Size(barWidth, chartAreaHeight),
+                            cornerRadius = cornerRadius
                         )
-                        
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Bottom,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 4.dp)
-                                    .weight(1f),
-                                contentAlignment = Alignment.BottomCenter
-                            ) {
-                                // Background track
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .fillMaxHeight()
-                                        .background(trackColor, RoundedCornerShape(8.dp))
-                                )
-                                // Active bar
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .fillMaxHeight(animatedRatio)
-                                        .background(barColor, RoundedCornerShape(8.dp))
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = day.dayName.take(6), 
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                fontSize = 10.sp
+                        // Active bar
+                        if (barHeight > 0) {
+                            drawRoundRect(
+                                color = barColor,
+                                topLeft = Offset(x, y),
+                                size = Size(barWidth, barHeight),
+                                cornerRadius = cornerRadius
                             )
                         }
+                    }
+                }
+
+                // Labels row — uses a Row with weight, but only for text (safe)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    data.forEachIndexed { index, day ->
+                        // For 90D (13 items), show every other label to avoid crowding
+                        val shouldShow = when {
+                            data.size <= 7 -> true
+                            data.size <= 13 -> index % 2 == 0
+                            else -> index % 3 == 0
+                        }
+                        Text(
+                            text = if (shouldShow) day.dayName.take(6) else "",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            fontSize = 9.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                 }
             }

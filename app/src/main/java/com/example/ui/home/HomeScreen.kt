@@ -119,16 +119,36 @@ fun HomeScreen(
                     }
                 }
 
+                // === DAILY MOTIVATIONAL QUOTE ===
+                item {
+                    AnimatedEntry(5) {
+                        DailyQuoteCard(quote = state.dailyQuote)
+                    }
+                }
+
+                // === AI PERSONAL ANALYSIS ===
+                item {
+                    AnimatedEntry(6) {
+                        AiAnalysisSection(
+                            state = state,
+                            onGenerate = {
+                                haptics.confirm()
+                                viewModel.generateAnalysis()
+                            }
+                        )
+                    }
+                }
+
                 if (state.exams.isNotEmpty()) {
                     item {
-                        AnimatedEntry(5) {
+                        AnimatedEntry(7) {
                             UpcomingExamsCard(exams = state.exams.take(3))
                         }
                     }
                 }
 
                 item {
-                    AnimatedEntry(6) {
+                    AnimatedEntry(8) {
                         RecentActivitySection(state, navController)
                     }
                 }
@@ -729,6 +749,240 @@ fun AiSmartPlanSection(
                             )
                             Text(
                                 "Analyses your syllabus, revisions & focus time",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ============================================================
+// DAILY MOTIVATIONAL QUOTE CARD
+// ============================================================
+@Composable
+fun DailyQuoteCard(quote: String) {
+    MahirCard(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(Dimens.cardPadding),
+            verticalAlignment = Alignment.Top
+        ) {
+            Icon(
+                Icons.Rounded.FormatQuote,
+                contentDescription = null,
+                tint = StatColors.purple().copy(alpha = 0.5f),
+                modifier = Modifier.size(28.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = quote,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontWeight = FontWeight.Medium,
+                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                    lineHeight = androidx.compose.ui.unit.TextUnit(24f, androidx.compose.ui.unit.TextUnitType.Sp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "— Daily Motivation",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+// ============================================================
+// AI PERSONAL ANALYSIS SECTION
+// ============================================================
+@Composable
+fun AiAnalysisSection(
+    state: HomeUiState,
+    onGenerate: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SectionTitle("AI Coach")
+            Surface(
+                onClick = onGenerate,
+                shape = RoundedCornerShape(12.dp),
+                color = StatColors.blue(),
+                enabled = !state.analysisLoading
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (state.analysisLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(14.dp),
+                            strokeWidth = 2.dp,
+                            color = Color.White
+                        )
+                    } else {
+                        Icon(
+                            Icons.Rounded.Psychology,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        if (state.analysisLoading) "Analysing…" else "Analyse Me",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.White,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(Dimens.spacingSm))
+
+        when {
+            // Loading state with no prior results
+            state.analysisLoading && state.analysisSummary == null -> {
+                MahirCard {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = StatColors.blue()
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            "AI is analysing your study patterns…",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            // Results available
+            state.analysisSummary != null -> {
+                MahirCard {
+                    Column(modifier = Modifier.padding(Dimens.cardPadding), verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)) {
+                        // Summary
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Rounded.Person, contentDescription = null, tint = StatColors.blue(), modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                state.analysisSummary,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        // Strengths
+                        if (state.analysisStrengths.isNotEmpty()) {
+                            Text(
+                                "Strengths",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = StatColors.green(),
+                                fontWeight = FontWeight.Bold
+                            )
+                            state.analysisStrengths.forEach { strength ->
+                                Text(
+                                    "• $strength",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onBackground
+                                )
+                            }
+                        }
+
+                        // Improvements
+                        if (state.analysisImprovements.isNotEmpty()) {
+                            Text(
+                                "Needs Work",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = StatColors.amber(),
+                                fontWeight = FontWeight.Bold
+                            )
+                            state.analysisImprovements.forEach { improvement ->
+                                Text(
+                                    "• $improvement",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onBackground
+                                )
+                            }
+                        }
+
+                        // Tonight's task
+                        state.tonightTask?.let { task ->
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = MahirColors.gold().copy(alpha = 0.1f)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(Icons.Rounded.Bolt, contentDescription = null, tint = MahirColors.gold(), modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        "Tonight: $task",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onBackground,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                        }
+
+                        // Motivational message
+                        state.motivationalMessage?.let { msg ->
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                            Text(
+                                msg,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Default empty state
+            else -> {
+                MahirCard {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Rounded.Psychology,
+                            contentDescription = null,
+                            tint = StatColors.blue(),
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Get your personal AI analysis",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                "Strengths, improvements & tonight's task",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
