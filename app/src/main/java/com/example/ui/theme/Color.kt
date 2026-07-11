@@ -2,35 +2,40 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
+// ============================================================
+// PREMIUM SAAS COLOR SYSTEM
+// Inspired by Linear, Notion, Vercel — clean, modern, professional
+// ============================================================
+
 // ===== Premium Light Theme =====
-val LightBackground = Color(0xFFFAF9F7)        // Warm off-white (paper)
+val LightBackground = Color(0xFFFAFAFA)        // Near-white (warm-neutral)
 val LightCard = Color(0xFFFFFFFF)              // Pure white card
-val LightForeground = Color(0xFF15171C)        // Near-black ink
-val LightMuted = Color(0xFF6E7178)             // Muted gray
-val LightBorder = Color(0xFFE8E5E0)            // Soft border
-val LightGold = Color(0xFFB08433)              // Refined gold (less saturated)
+val LightForeground = Color(0xFF0F172A)        // Slate-900 (rich ink)
+val LightMuted = Color(0xFF64748B)             // Slate-500 (cool muted)
+val LightBorder = Color(0xFFE2E8F0)            // Slate-200 (soft border)
+val LightGold = Color(0xFFB08433)              // Brand gold (refined)
 val LightGoldForeground = Color(0xFFFFFFFF)
-val LightSecondaryBg = Color(0xFFF1EEE9)       // Cream secondary
-val LightMutedBg = Color(0xFFF4F1EC)           // Subtle background
-val LightSuccessGreen = Color(0xFF0F9D58)
-val LightDangerRed = Color(0xFFD93025)
-val LightInfoBlue = Color(0xFF1A73E8)
-val LightWarmPurple = Color(0xFF8E44AD)
+val LightSecondaryBg = Color(0xFFF1F5F9)       // Slate-100 (subtle fill)
+val LightMutedBg = Color(0xFFF8FAFC)           // Slate-50 (whisper bg)
+val LightSuccessGreen = Color(0xFF10B981)      // Emerald-500
+val LightDangerRed = Color(0xFFEF4444)         // Red-500
+val LightInfoBlue = Color(0xFF3B82F6)          // Blue-500
+val LightWarmPurple = Color(0xFF8B5CF6)        // Violet-500
 
 // ===== Premium Dark Theme =====
-val DarkBackground = Color(0xFF0A0B10)         // Deep ink-black
-val DarkCard = Color(0xFF12141C)               // Card with slight elevation
-val DarkForeground = Color(0xFFEDEAE3)         // Warm off-white text
-val DarkMuted = Color(0xFF848893)              // Cool muted gray
-val DarkBorder = Color(0x14FFFFFF)             // rgba(255,255,255,0.08)
-val DarkGold = Color(0xFFD4A853)               // Warm gold (premium)
-val DarkGoldForeground = Color(0xFF0A0B10)
-val DarkSecondaryBg = Color(0xFF1A1D27)        // Elevated secondary
-val DarkInputBg = Color(0x14FFFFFF)            // rgba(255,255,255,0.08)
+val DarkBackground = Color(0xFF09090B)         // Zinc-950 (true dark)
+val DarkCard = Color(0xFF18181B)               // Zinc-900 (card surface)
+val DarkForeground = Color(0xFFFAFAFA)         // Zinc-50 (clean white text)
+val DarkMuted = Color(0xFFA1A1AA)              // Zinc-400 (readable muted)
+val DarkBorder = Color(0xFF27272A)             // Zinc-800 (subtle border)
+val DarkGold = Color(0xFFD4A853)               // Warm gold (premium accent)
+val DarkGoldForeground = Color(0xFF09090B)
+val DarkSecondaryBg = Color(0xFF1F1F23)        // Slightly elevated
+val DarkInputBg = Color(0xFF27272A)            // Input field bg
 val DarkSuccessGreen = Color(0xFF34D399)
 val DarkDangerRed = Color(0xFFF87171)
 val DarkInfoBlue = Color(0xFF60A5FA)
-val DarkWarmPurple = Color(0xFFB984FF)
+val DarkWarmPurple = Color(0xFFA78BFA)
 
 // ===== Priority Badge Colors =====
 val PriorityHigh = Color(0xFFEF4444)

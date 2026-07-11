@@ -191,9 +191,9 @@ fun HomeScreen(
 fun HeaderSection(userName: String, themeMode: String, onThemeToggle: () -> Unit) {
     val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
     val greeting = when (hour) {
-        in 0..11 -> "Good Morning"
-        in 12..16 -> "Good Afternoon"
-        else -> "Good Evening"
+        in 0..11 -> "Good morning"
+        in 12..16 -> "Good afternoon"
+        else -> "Good evening"
     }
 
     Row(
@@ -201,13 +201,12 @@ fun HeaderSection(userName: String, themeMode: String, onThemeToggle: () -> Unit
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = greeting,
+                text = "$greeting,",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(modifier = Modifier.height(Dimens.spacingXs))
             Text(
                 text = userName,
                 style = MaterialTheme.typography.headlineSmall,
@@ -219,15 +218,16 @@ fun HeaderSection(userName: String, themeMode: String, onThemeToggle: () -> Unit
         IconButton(
             onClick = onThemeToggle,
             modifier = Modifier
-                .size(44.dp)
+                .size(40.dp)
                 .clip(CircleShape)
-                .background(MahirColors.subtleBackground())
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
         ) {
             val isDark = themeMode == "DARK" || (themeMode == "SYSTEM" && androidx.compose.foundation.isSystemInDarkTheme())
             Icon(
                 imageVector = if (isDark) Icons.Rounded.LightMode else Icons.Rounded.DarkMode,
                 contentDescription = "Toggle Theme",
-                tint = MaterialTheme.colorScheme.onBackground
+                tint = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.size(20.dp)
             )
         }
     }

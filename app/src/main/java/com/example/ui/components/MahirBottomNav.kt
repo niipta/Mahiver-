@@ -85,11 +85,11 @@ fun MahirBottomNavigation(navController: NavController, modifier: Modifier = Mod
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = Dimens.screenPaddingHorizontal, vertical = Dimens.spacingLg),
+            .padding(horizontal = Dimens.screenPaddingHorizontal, vertical = Dimens.spacingMd),
         shape = RoundedCornerShape(Dimens.bottomNavRadius),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+        color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        shadowElevation = Dimens.bottomNavElevation
+        shadowElevation = 0.dp
     ) {
         BoxWithConstraints(
             modifier = Modifier.padding(horizontal = Dimens.spacingXs, vertical = Dimens.spacingSm)
@@ -104,16 +104,16 @@ fun MahirBottomNavigation(navController: NavController, modifier: Modifier = Mod
                 label = "navIndicator"
             )
 
-            // Animated Indicator Pill
+            // Animated Indicator Pill — subtle, premium
             if (selectedIndex >= 0) {
                 Box(
                     modifier = Modifier
                         .offset(x = indicatorOffset)
                         .width(itemWidth)
-                        .height(44.dp)
+                        .height(40.dp)
                         .background(
-                            MahirColors.gold().copy(alpha = 0.15f),
-                            RoundedCornerShape(Dimens.pillRadius)
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
+                            RoundedCornerShape(12.dp)
                         )
                 )
             }
@@ -129,7 +129,7 @@ fun MahirBottomNavigation(navController: NavController, modifier: Modifier = Mod
                     Column(
                         modifier = Modifier
                             .width(itemWidth)
-                            .height(44.dp)
+                            .height(40.dp)
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null,

@@ -5,8 +5,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.Dp
 
 /**
- * Premium design tokens for MahirVerse.
- * Use these consistently across all screens for a cohesive, premium feel.
+ * Premium design tokens for MahirVerse — SaaS-level polish.
+ * Inspired by Linear, Notion, Vercel design systems.
  */
 object Dimens {
     // Spacing scale (4-pt grid)
@@ -24,18 +24,18 @@ object Dimens {
     val screenPaddingTop: Dp = 56.dp
     val screenPaddingBottom: Dp = 100.dp
 
-    // Card properties
-    val cardRadius: Dp = 20.dp
-    val cardRadiusSm: Dp = 14.dp
-    val cardRadiusLg: Dp = 28.dp
-    val cardPadding: Dp = 18.dp
-    val cardPaddingLg: Dp = 22.dp
+    // Card properties — premium rounded corners + subtle elevation
+    val cardRadius: Dp = 16.dp
+    val cardRadiusSm: Dp = 12.dp
+    val cardRadiusLg: Dp = 24.dp
+    val cardPadding: Dp = 16.dp
+    val cardPaddingLg: Dp = 20.dp
     val cardBorderWidth: Dp = 1.dp
-    val cardElevation: Dp = 0.dp
+    val cardElevation: Dp = 0.dp  // Use border instead of shadow (cleaner look)
 
     // Pill / chip
     val pillRadius: Dp = 999.dp
-    val pillHeight: Dp = 40.dp
+    val pillHeight: Dp = 36.dp
 
     // Icon sizes
     val iconXs: Dp = 14.dp
@@ -45,14 +45,14 @@ object Dimens {
     val iconXl: Dp = 48.dp
 
     // Bottom nav
-    val bottomNavHeight: Dp = 64.dp
-    val bottomNavRadius: Dp = 24.dp
-    val bottomNavElevation: Dp = 12.dp
+    val bottomNavHeight: Dp = 60.dp
+    val bottomNavRadius: Dp = 20.dp
+    val bottomNavElevation: Dp = 0.dp  // Border + blur instead
 }
 
 object AnimTokens {
-    const val FAST = 180
-    const val MEDIUM = 300
-    const val SLOW = 500
-    const val STAGGER_MS = 50L
+    const val FAST = 150
+    const val MEDIUM = 250
+    const val SLOW = 400
+    const val STAGGER_MS = 40L
 }
