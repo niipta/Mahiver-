@@ -155,32 +155,6 @@ class SettingsRepository constructor(context: Context) {
         }
     }
 
-    private fun obfuscate(plain: String): String {
-        if (plain.isEmpty()) return ""
-        val keyBytes = OBF_KEY.toByteArray(Charsets.UTF_8)
-        val plainBytes = plain.toByteArray(Charsets.UTF_8)
-        val out = ByteArray(plainBytes.size)
-        for (i in plainBytes.indices) {
-            out[i] = (plainBytes[i].toInt() xor keyBytes[i % keyBytes.size].toInt()).toByte()
-        }
-        return android.util.Base64.encodeToString(out, android.util.Base64.NO_WRAP)
-    }
-
-    private fun deobfuscate(encoded: String): String {
-        if (encoded.isEmpty()) return ""
-        return try {
-            val keyBytes = OBF_KEY.toByteArray(Charsets.UTF_8)
-            val encBytes = android.util.Base64.decode(encoded, android.util.Base64.NO_WRAP)
-            val out = ByteArray(encBytes.size)
-            for (i in encBytes.indices) {
-                out[i] = (encBytes[i].toInt() xor keyBytes[i % keyBytes.size].toInt()).toByte()
-            }
-            String(out, Charsets.UTF_8)
-        } catch (e: Exception) {
-            encoded
-        }
-    }
-
     fun updateUserName(name: String) {
         prefs.edit().putString("user_name", name).apply()
         _userName.value = name
