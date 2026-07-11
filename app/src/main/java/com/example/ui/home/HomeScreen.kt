@@ -56,7 +56,31 @@ fun HomeScreen(
                 MahirBottomNavigation(navController = navController)
             }
         ) { innerPadding ->
-            LazyColumn(
+            // Loading state: show a simple loading indicator while data
+            // is being fetched from Room on cold start. This prevents the
+            // "blank screen" perception during late loads.
+            val isInitialLoad = state.userName == "MAHIR" && state.lifetimeFocusMinutes == 0 && state.subjects.isEmpty()
+            if (isInitialLoad) {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(innerPadding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(32.dp),
+                            strokeWidth = 3.dp,
+                            color = MahirColors.gold()
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            "Loading your study data…",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            } else {
+                LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
@@ -153,6 +177,7 @@ fun HomeScreen(
                     }
                 }
             }
+            } // end else (loading state)
         }
 
         com.example.ui.components.AchievementUnlockOverlay(

@@ -59,29 +59,32 @@ class AnalyticsViewModel @Inject constructor(
         settingsRepository.currentStreak,
         settingsRepository.longestStreak
     ) { subjectsList, sessions, revisions, currentStreak, longestStreak ->
+        // Null-safe guards — during cold start these lists can briefly be null
+        val safeSubjects = subjectsList ?: emptyList()
+        val safeSessions = sessions ?: emptyList()
         val validFocusTypes = listOf("Focus", "Study")
-        
+
         val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
         val todayStr = dateFormat.format(java.util.Date(System.currentTimeMillis()))
-        
-        val lifetimeFocusTime = sessions.filter { it.sessionType in validFocusTypes }.sumOf { it.actualDurationSeconds.toLong() / 60 }
-        
-        val todayFocusTime = sessions.filter { session ->
+
+        val lifetimeFocusTime = safeSessions.filter { it.sessionType in validFocusTypes }.sumOf { it.actualDurationSeconds.toLong() / 60 }
+
+        val todayFocusTime = safeSessions.filter { session ->
             val sessionDate = dateFormat.format(java.util.Date(session.timestamp))
             sessionDate == todayStr && session.sessionType in validFocusTypes
         }.sumOf { it.actualDurationSeconds.toLong() / 60 }
-        
-        val totalRevisionTime = sessions.filter { it.sessionType == "Revision" }.sumOf { it.actualDurationSeconds.toLong() / 60 }
-        
+
+        val totalRevisionTime = safeSessions.filter { it.sessionType == "Revision" }.sumOf { it.actualDurationSeconds.toLong() / 60 }
+
         var completedTopics = 0
         var allTopics = 0
-        
-        subjectsList.forEach { swt ->
+
+        safeSubjects.forEach { swt ->
             allTopics += swt.totalTopics
             completedTopics += swt.completedTopics
         }
 
-        val weak = subjectsList.sortedBy { swt -> 
+        val weak = safeSubjects.sortedBy { swt ->
             val total = swt.totalTopics
             if (total == 0) 1f else swt.completedTopics.toFloat() / total
         }.take(3).filter { it.topics.isNotEmpty() }.map { it.subject.name }
@@ -102,7 +105,7 @@ class AnalyticsViewModel @Inject constructor(
         for (i in 0..6) {
             val dayStart = startOfWeek + (i * 24 * 60 * 60 * 1000L)
             val dayEnd = dayStart + (24 * 60 * 60 * 1000L)
-            val minutes = sessions
+            val minutes = safeSessions
                 .filter { it.timestamp in dayStart until dayEnd && it.sessionType in validFocusTypes }
                 .sumOf { it.actualDurationSeconds / 60L }
             weeklyData.add(DailyStudyTime(dayNames[i], minutes))
@@ -117,7 +120,7 @@ class AnalyticsViewModel @Inject constructor(
         for (i in 12 downTo 0) {
             val weekStart = startOfWeek - (i * 7 * 24 * 60 * 60 * 1000L)
             val weekEnd = weekStart + (7 * 24 * 60 * 60 * 1000L)
-            val minutes = sessions
+            val minutes = safeSessions
                 .filter { it.timestamp in weekStart until weekEnd && it.sessionType in validFocusTypes }
                 .sumOf { it.actualDurationSeconds / 60L }
 
@@ -125,12 +128,11 @@ class AnalyticsViewModel @Inject constructor(
             val record = DailyStudyTime(label, minutes)
 
             quarterlyData.add(record)
-            // FIX: monthlyData is the most-recent 4 weeks (same as before but explicit)
             if (i < 4) {
                 monthlyData.add(record)
             }
         }
-        
+
         AnalyticsUiState(
             todayFocusMinutes = todayFocusTime,
             weeklyFocusMinutes = weeklyFocusTime,
@@ -138,8 +140,8 @@ class AnalyticsViewModel @Inject constructor(
             totalRevisionMinutes = totalRevisionTime,
             topicsCompleted = completedTopics,
             totalTopics = allTopics,
-            subjectsData = subjectsList,
-            focusSessions = sessions,
+            subjectsData = safeSubjects,
+            focusSessions = safeSessions,
             weakSubjects = weak,
             weeklyStudyData = weeklyData,
             currentStreak = currentStreak,

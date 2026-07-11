@@ -126,7 +126,7 @@ class FocusViewModel @Inject constructor(
             var sName: String? = null
             var tName: String? = null
             var subName: String? = null
-            
+
             if (subjectId != null) {
                 syllabusDao.getSubjectById(subjectId)?.let { sName = it.name }
             }
@@ -138,5 +138,15 @@ class FocusViewModel @Inject constructor(
             }
             TimerManager.setTaskContext(subjectId, topicId, subtopicId, customTitle, sName, tName, subName)
         }
+    }
+
+    /**
+     * Explicitly sets a "General Study" context so the focus session records
+     * meaningful data even when no specific topic is selected. This is called
+     * when the user chooses "General Study" from the missing-topic dialog.
+     */
+    fun startGeneralStudy() {
+        TimerManager.setTaskContext(null, null, null, null, "General Study", null, null)
+        startTimer()
     }
 }

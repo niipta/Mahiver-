@@ -493,6 +493,14 @@ fun SessionHistoryItem(session: FocusSessionEntity, onActionClick: () -> Unit) {
     val colors = listOf(MaterialTheme.colorScheme.primary, Color(0xFF4CAF50), Color(0xFFFF9100), Color(0xFFE91E63), Color(0xFF9C27B0))
     val subjectColor = colors[Math.floorMod(session.subjectName.hashCode(), colors.size)]
 
+    // Session type icon — differentiates Focus / Revision / Custom Task
+    val (sessionIcon, sessionIconTint) = when {
+        session.sessionType == "Revision" -> Icons.Rounded.Refresh to Color(0xFFFF9100)
+        session.subjectName == "Custom Task" -> Icons.Rounded.Edit to Color(0xFF9C27B0)
+        session.isDeepFocus -> Icons.Rounded.Bolt to Color(0xFF4CAF50)
+        else -> Icons.Rounded.Timer to MaterialTheme.colorScheme.primary
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -500,10 +508,13 @@ fun SessionHistoryItem(session: FocusSessionEntity, onActionClick: () -> Unit) {
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Color dot indicating subject
+        // Session type icon — differentiates Focus/Revision/Custom
         Box(
-            modifier = Modifier.size(8.dp).background(subjectColor, CircleShape)
-        )
+            modifier = Modifier.size(32.dp).background(sessionIconTint.copy(alpha = 0.12f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(sessionIcon, contentDescription = null, tint = sessionIconTint, modifier = Modifier.size(16.dp))
+        }
         Spacer(modifier = Modifier.width(12.dp))
 
         Column(modifier = Modifier.weight(1f)) {

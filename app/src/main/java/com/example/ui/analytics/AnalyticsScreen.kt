@@ -136,41 +136,56 @@ fun AnalyticsScreen(
             item {
                 AnimatedEntry(5) {
                     val radarData = remember(state.subjectsData) {
-                        val mapped = state.subjectsData.map { swt ->
-                            val progress = if (swt.totalTopics > 0) swt.completedTopics.toFloat() / swt.totalTopics else 0f
-                            val color = try {
-                                Color(swt.subject.color)
-                            } catch (e: Exception) {
-                                Color.Gray
-                            }
-                            com.example.ui.components.RadarData(swt.subject.name, progress, color)
-                        }.sortedByDescending { it.progress }
-
-                        if (mapped.size > 6) {
-                            val top5 = mapped.take(5)
-                            val rest = mapped.drop(5)
-                            val otherProgress = if (rest.isNotEmpty()) rest.map { it.progress }.average().toFloat() else 0f
-                            top5 + com.example.ui.components.RadarData("Other", otherProgress, Color.Gray)
-                        } else {
-                            mapped
-                        }
+                        // Safe-map with null guards at every step
+                        state.subjectsData
+                            .filter { it.topics.isNotEmpty() || it.subject.name.isNotBlank() }
+                            .mapNotNull { swt ->
+                                try {
+                                    val progress = if (swt.totalTopics > 0) {
+                                        swt.completedTopics.toFloat() / swt.totalTopics
+                                    } else 0f
+                                    val color = try {
+                                        Color(swt.subject.color)
+                                    } catch (e: Exception) {
+                                        Color.Gray
+                                    }
+                                    com.example.ui.components.RadarData(swt.subject.name, progress, color)
+                                } catch (e: Exception) {
+                                    null
+                                }
+                            }.sortedByDescending { it.progress }
                     }
 
                     MahirCard(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(20.dp)) {
                             Text("Subject Balance", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                             Spacer(modifier = Modifier.height(16.dp))
-                            com.example.ui.components.RadarChart(data = radarData)
-                            Spacer(modifier = Modifier.height(16.dp))
-                            
-                            // Use FlowRow for legend since it could wrap
-                            @OptIn(ExperimentalLayoutApi::class)
-                            FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                                radarData.forEach { data ->
-                                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)) {
-                                        Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(data.color))
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(data.label, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            if (radarData.size < 2) {
+                                // Empty state instead of crashing RadarChart
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().height(120.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        "Add 2+ subjects to see balance chart",
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontSize = 13.sp,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            } else {
+                                com.example.ui.components.RadarChart(data = radarData)
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                // Use FlowRow for legend since it could wrap
+                                @OptIn(ExperimentalLayoutApi::class)
+                                FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                                    radarData.forEach { data ->
+                                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)) {
+                                            Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(data.color))
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(data.label, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
                                     }
                                 }
                             }

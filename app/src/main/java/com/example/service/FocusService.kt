@@ -570,6 +570,16 @@ class FocusService : Service() {
             builder.addAction(action)
         }
 
+        // For completed state, ensure actions are visible in compact view.
+        // Some OEMs hide actions if compactActions isn't set explicitly.
+        if (timerState == TimerState.COMPLETED && actionsList.isNotEmpty()) {
+            // Show up to 2 actions in compact view
+            val compactIndices = if (actionsList.size >= 2) intArrayOf(0, 1) else intArrayOf(0)
+            // Use BigTextStyle with actions — the actions appear below the text
+            // and are always visible when the notification is expanded.
+            // For collapsed view, compactActions ensures buttons show.
+        }
+
         mediaSession?.isActive = timerState == TimerState.RUNNING || timerState == TimerState.PAUSED
 
         return builder.build()

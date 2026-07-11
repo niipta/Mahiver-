@@ -224,22 +224,27 @@ fun FocusScreen(
         if (showMissingTopicPrompt) {
             AlertDialog(
                 onDismissRequest = { showMissingTopicPrompt = false },
-                title = { Text("Select a Topic", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground) },
-                text = { Text("Please select a topic or add a custom task to focus on.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                title = { Text("Kis topic par focus karoge?", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground) },
+                text = { Text("Topic select karo ya custom task type karo. General Study bhi choose kar sakte ho.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) },
                 confirmButton = {
-                    TextButton(onClick = { 
-                        showMissingTopicPrompt = false
-                        showTopicSelector = true 
-                    }) {
-                        Text("Select Topic", color = MahirColors.gold())
+                    androidx.compose.material3.Button(
+                        onClick = {
+                            showMissingTopicPrompt = false
+                            showTopicSelector = true
+                        },
+                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = MahirColors.gold())
+                    ) {
+                        Text("Select Topic", color = MahirColors.goldForeground())
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { 
-                        showMissingTopicPrompt = false
-                        viewModel.startTimer() // start anyway
-                    }) {
-                        Text("Start Anyway", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row {
+                        TextButton(onClick = {
+                            showMissingTopicPrompt = false
+                            viewModel.startGeneralStudy()
+                        }) {
+                            Text("General Study", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                 },
                 containerColor = MahirColors.cardBackground(),

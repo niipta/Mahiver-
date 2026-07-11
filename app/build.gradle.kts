@@ -17,8 +17,8 @@ android {
     applicationId = "com.aistudio.mahirverse.xjklqa"
     minSdk = 24
     targetSdk = 35
-    versionCode = 2
-    versionName = "2.0"
+    versionCode = 3
+    versionName = "2.3"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -48,7 +48,9 @@ android {
       signingConfig = signingConfigs.getByName("release")
     }
     debug {
-      // Use default debug signing (no custom config needed)
+      // Use the debugConfig signing so CI builds are signed with the same
+      // keystore every time, allowing APK updates over existing installs.
+      signingConfig = signingConfigs.getByName("debugConfig")
     }
   }
   compileOptions {

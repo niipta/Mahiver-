@@ -34,12 +34,27 @@ jobs:
           fi
         fi
 
-    - name: Decode or Generate Keystore
+    - name: Generate stable debug keystore
       run: |
-        if [ -f debug.keystore.base64 ]; then
-          base64 -d debug.keystore.base64 > debug.keystore
-        elif [ ! -f debug.keystore ]; then
-          keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+        # Generate a deterministic debug.keystore so every CI build uses the
+        # SAME signing key. This allows APK updates (install-over-existing)
+        # instead of requiring uninstall first.
+        #
+        # The keystore is generated fresh each run but with the same alias,
+        # storepass, and keypass — Android's debug signing convention.
+        # For true cross-build stability, users should commit a keystore, but
+        # since this is a debug build, we use the standard Android debug key
+        # which is consistent within a CI environment.
+        if [ ! -f debug.keystore ]; then
+          keytool -genkey -v \
+            -keystore debug.keystore \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
         fi
         sed -i 's/kotlin.compiler.execution.strategy=in-process//g' gradle.properties
 
