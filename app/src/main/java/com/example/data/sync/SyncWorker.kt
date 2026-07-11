@@ -32,11 +32,8 @@ class SyncWorker @AssistedInject constructor(
 
         val auth = FirebaseAuth.getInstance()
         if (auth.currentUser == null) {
-            try {
-                auth.signInAnonymously().await()
-            } catch (e: Exception) {
-                return@withContext Result.retry()
-            }
+            // No user logged in — skip sync (user needs to sign in first)
+            return@withContext Result.success()
         }
         val userId = auth.currentUser?.uid ?: return@withContext Result.retry()
         val db = FirebaseFirestore.getInstance()

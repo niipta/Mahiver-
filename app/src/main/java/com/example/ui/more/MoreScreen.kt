@@ -59,6 +59,11 @@ fun MoreScreen(navController: NavController, viewModel: MoreViewModel = hiltView
     var showDailyGoalDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
     var showResetDialog by remember { mutableStateOf(false) }
+    var showSignOutDialog by remember { mutableStateOf(false) }
+
+    // Firebase auth state
+    val auth = com.google.firebase.auth.FirebaseAuth.getInstance()
+    val currentUser = auth.currentUser
 
     ThemeDialog(
         showDialog = showThemeDialog,
@@ -119,6 +124,35 @@ fun MoreScreen(navController: NavController, viewModel: MoreViewModel = hiltView
             onDismiss = { showApiKeyDialog = false }
         )
     }
+    if (showSignOutDialog) {
+        AlertDialog(
+            onDismissRequest = { showSignOutDialog = false },
+            title = { Text("Sign Out?", color = MaterialTheme.colorScheme.onBackground) },
+            text = { Text("Aapka data cloud pe sync rahega. Wapas login karke access kar sakte ho.", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        haptics.confirm()
+                        auth.signOut()
+                        showSignOutDialog = false
+                        // Restart to auth screen
+                        val intent = android.content.Intent(context, com.example.MainActivity::class.java).apply {
+                            flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        }
+                        context.startActivity(intent)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) { Text("Sign Out", color = Color.White) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSignOutDialog = false }) {
+                    Text("Cancel", color = MaterialTheme.colorScheme.onBackground)
+                }
+            },
+            containerColor = MahirColors.cardBackground(),
+            shape = RoundedCornerShape(Dimens.cardRadius)
+        )
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -177,12 +211,29 @@ fun MoreScreen(navController: NavController, viewModel: MoreViewModel = hiltView
                             )
                             Spacer(modifier = Modifier.height(Dimens.spacingXs))
                             Text(
-                                text = "Tap to edit your name",
+                                text = currentUser?.email ?: "Guest user",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
+                }
+            }
+
+            // === ACCOUNT SECTION ===
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)) {
+                    SectionTitle("Account")
+                    MoreMenuItem(
+                        icon = Icons.Rounded.Logout,
+                        title = "Sign Out",
+                        subtitle = "Cloud data safe rahega",
+                        onClick = {
+                            haptics.tap()
+                            showSignOutDialog = true
+                        },
+                        isDanger = true
+                    )
                 }
             }
 

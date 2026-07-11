@@ -179,9 +179,15 @@ class MainActivity : ComponentActivity() {
     setContent {
       MyApplicationTheme {
         val navController = rememberNavController()
-        val startDest = if (isOnboardingComplete()) "home" else "onboarding"
+        // Auth check: if not logged in → auth screen, if logged in but onboarding not done → onboarding, else → home
+        val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+        val startDest = when {
+            currentUser == null -> "auth"
+            !isOnboardingComplete() -> "onboarding"
+            else -> "home"
+        }
         NavHost(
-            navController = navController, 
+            navController = navController,
             startDestination = startDest,
             enterTransition = {
                 androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(300)) + 
@@ -200,6 +206,9 @@ class MainActivity : ComponentActivity() {
                 androidx.compose.animation.slideOutHorizontally(androidx.compose.animation.core.tween(200), targetOffsetX = { it / 4 })
             }
         ) {
+            composable("auth") {
+                com.example.ui.auth.AuthScreen(navController = navController)
+            }
             composable("onboarding") {
                 com.example.ui.onboarding.OnboardingScreen(navController = navController)
             }
