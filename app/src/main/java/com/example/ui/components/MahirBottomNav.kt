@@ -66,7 +66,7 @@ fun MahirBottomNavigation(navController: NavController, modifier: Modifier = Mod
     val items = listOf(
         NavItem("home", Icons.Rounded.Home, "Home"),
         NavItem("syllabus", Icons.AutoMirrored.Rounded.MenuBook, "Syllabus"),
-        NavItem("analytics", Icons.Rounded.School, "Stats"),
+        NavItem("analytics", Icons.Rounded.Star, "Stats"),
         NavItem("focus", Icons.Rounded.Timer, "Focus"),
         NavItem("revision", Icons.Rounded.Repeat, "Revision"),
         NavItem("more", Icons.Rounded.MoreHoriz, "More")
