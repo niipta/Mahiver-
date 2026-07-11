@@ -439,6 +439,7 @@ private fun SubjectProgress(subjectsData: List<SubjectWithTopics>) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         // Mini circular progress
+                        val trackColor = MaterialTheme.colorScheme.outlineVariant
                         Box(
                             modifier = Modifier.size(36.dp),
                             contentAlignment = Alignment.Center
@@ -449,7 +450,7 @@ private fun SubjectProgress(subjectsData: List<SubjectWithTopics>) {
                                 val center = Offset(size.width / 2f, size.height / 2f)
 
                                 drawCircle(
-                                    color = trackColorCompat(),
+                                    color = trackColor,
                                     radius = radius,
                                     center = center,
                                     style = Stroke(width = strokeWidth)
@@ -485,9 +486,6 @@ private fun SubjectProgress(subjectsData: List<SubjectWithTopics>) {
         }
     }
 }
-
-@Composable
-private fun trackColorCompat(): Color = MaterialTheme.colorScheme.outlineVariant
 
 // ============================================================
 // LIFETIME STATS — clean list
