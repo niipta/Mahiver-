@@ -66,7 +66,7 @@ fun MahirBottomNavigation(navController: NavController, modifier: Modifier = Mod
     val items = listOf(
         NavItem("home", Icons.Rounded.Home, "Home"),
         NavItem("syllabus", Icons.AutoMirrored.Rounded.MenuBook, "Syllabus"),
-        NavItem("mocks", Icons.Rounded.Quiz, "Mocks"),
+        NavItem("analytics", Icons.Rounded.Analytics, "Stats"),
         NavItem("focus", Icons.Rounded.Timer, "Focus"),
         NavItem("revision", Icons.Rounded.Repeat, "Revision"),
         NavItem("more", Icons.Rounded.MoreHoriz, "More")
@@ -75,7 +75,7 @@ fun MahirBottomNavigation(navController: NavController, modifier: Modifier = Mod
     val selectedIndex = when (currentRoute) {
         "home" -> 0
         "syllabus" -> 1
-        "mocks" -> 2
+        "analytics" -> 2
         "focus" -> 3
         "revision" -> 4
         "more" -> 5
