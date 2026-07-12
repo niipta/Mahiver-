@@ -281,9 +281,9 @@ class AnalyticsViewModel @Inject constructor(
     }
 
     /**
-     * Builds a leaderboard with the current user + 9 AI-generated competitors.
-     * In a real SaaS app this would come from Firestore, but for now we
-     * generate realistic competitors based on the user's own stats.
+     * Builds a leaderboard with ONLY the real user's data.
+     * No fake competitors — when Firestore sync is enabled and other users
+     * join, this will pull real data from the cloud.
      */
     private fun buildLeaderboard(
         userName: String,
@@ -291,25 +291,14 @@ class AnalyticsViewModel @Inject constructor(
         userStreak: Int,
         userLongestStreak: Int
     ): List<LeaderboardEntry> {
-        val competitors = listOf(
-            "Aarav" to (8000L + (Math.random() * 3000).toLong()),
-            "Priya" to (7500L + (Math.random() * 2000).toLong()),
-            "Rohan" to (6000L + (Math.random() * 2500).toLong()),
-            "Sneha" to (5000L + (Math.random() * 2000).toLong()),
-            "Vikram" to (4000L + (Math.random() * 1500).toLong()),
-            "Ananya" to (3500L + (Math.random() * 1000).toLong()),
-            "Karan" to (2000L + (Math.random() * 800).toLong()),
-            "Diya" to (1500L + (Math.random() * 500).toLong()),
-            "Arjun" to (500L + (Math.random() * 300).toLong())
+        return listOf(
+            LeaderboardEntry(
+                rank = 1,
+                name = userName,
+                points = userPoints,
+                streak = userStreak,
+                isCurrentUser = true
+            )
         )
-
-        val allEntries = competitors.map { (name, points) ->
-            LeaderboardEntry(rank = 0, name = name, points = points, streak = (1 + (Math.random() * 30).toInt()), isCurrentUser = false)
-        } + LeaderboardEntry(rank = 0, name = userName, points = userPoints, streak = userStreak, isCurrentUser = true)
-
-        val sorted = allEntries.sortedByDescending { it.points }
-        return sorted.mapIndexed { index, entry ->
-            entry.copy(rank = index + 1)
-        }
     }
 }

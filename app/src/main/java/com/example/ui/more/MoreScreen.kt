@@ -323,6 +323,29 @@ fun MoreScreen(navController: NavController, viewModel: MoreViewModel = hiltView
                         }
                     )
                     MoreMenuItem(
+                        icon = Icons.Rounded.Sync,
+                        title = "Cloud Sync",
+                        subtitle = "Sync data to Firestore (cloud backup)",
+                        onClick = {
+                            haptics.tap()
+                            // Trigger sync via WorkManager
+                            val syncRequest = androidx.work.OneTimeWorkRequestBuilder<com.example.data.sync.SyncWorker>().build()
+                            androidx.work.WorkManager.getInstance(context).enqueue(syncRequest)
+                            android.widget.Toast.makeText(context, "Cloud sync started — check back in a minute", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                    MoreMenuItem(
+                        icon = Icons.Rounded.CloudDownload,
+                        title = "Restore from Cloud",
+                        subtitle = "Pull data from Firestore to this device",
+                        onClick = {
+                            haptics.tap()
+                            val restoreRequest = androidx.work.OneTimeWorkRequestBuilder<com.example.data.sync.RestoreWorker>().build()
+                            androidx.work.WorkManager.getInstance(context).enqueue(restoreRequest)
+                            android.widget.Toast.makeText(context, "Cloud restore started — check back in a minute", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                    MoreMenuItem(
                         icon = Icons.Rounded.LockReset,
                         title = "Reset App Data",
                         subtitle = "Clear all study data permanently",

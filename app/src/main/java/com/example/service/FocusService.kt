@@ -251,29 +251,32 @@ class FocusService : Service() {
     private fun runTimer() {
         timerJob?.cancel()
         val currentRemainingSeconds = TimerManager.timeRemaining.value
-        val totalDurationMs = TimerManager.getDurationMinutes(TimerManager.sessionType.value) * 60 * 1000L
-        
+        // FIX: use originalDurationSeconds instead of getDurationMinutes() so
+        // that addTime() extensions are respected. The old code recalculated
+        // totalDurationMs from the base duration, losing any +5min extensions.
+        val totalDurationMs = TimerManager.originalDurationSeconds * 1000L
+
         val expectedElapsedMs = totalDurationMs - (currentRemainingSeconds * 1000L)
         sessionStartTimeMs = System.currentTimeMillis() - expectedElapsedMs
-        
+
         timerJob = serviceScope.launch {
             while (TimerManager.timerState.value == TimerState.RUNNING) {
                 val elapsed = System.currentTimeMillis() - sessionStartTimeMs
                 val remainingMs = java.lang.Long.max(0L, totalDurationMs - elapsed)
                 TimerManager.updateTime(remainingMs / 1000L)
-                
+
                 val now = System.currentTimeMillis()
                 if (now - lastNotifUpdateMs >= 1000) {
                     updateNotification()
                     sendBroadcast(android.content.Intent("com.example.widget.ACTION_TIMER_TICK"))
                     lastNotifUpdateMs = now
                 }
-                
+
                 if (remainingMs <= 0L) {
                     finishSession()
                     break
                 }
-                delay(250) // Update 4x/sec for smooth UI, but time is wall-clock accurate
+                delay(250)
             }
         }
     }
@@ -338,10 +341,17 @@ class FocusService : Service() {
     }
 
     private fun saveCompletedSession(manualStop: Boolean = false) {
+        // FIX: Don't save break sessions as focus sessions. Breaks are just
+        // rest periods and should not appear in study time / analytics.
+        val currentSessionType = TimerManager.sessionType.value
+        if (currentSessionType == SessionType.SHORT_BREAK || currentSessionType == SessionType.LONG_BREAK) {
+            return
+        }
+
         val initialSeconds = TimerManager.originalDurationSeconds
         val remainingSeconds = TimerManager.timeRemaining.value
         val actualSecondsSpent = (initialSeconds - remainingSeconds).toInt()
-        
+
         if (actualSecondsSpent < 60) return // Don't save sessions under 1 minute
 
         val subjectId = TimerManager.selectedSubjectId.value
