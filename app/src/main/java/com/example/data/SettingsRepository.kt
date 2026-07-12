@@ -251,6 +251,20 @@ class SettingsRepository constructor(context: Context) {
         _streakFreezesAvailable.value = current + 1
     }
 
+    fun setStreakFreezes(count: Int) {
+        prefs.edit().putInt("streak_freezes", count).apply()
+        _streakFreezesAvailable.value = count
+    }
+
+    // Monthly streak freeze reset — 4 free per month
+    fun getLastFreezeResetMonth(): Int {
+        return prefs.getInt("last_freeze_reset_month", -1)
+    }
+
+    fun setLastFreezeResetMonth(month: Int) {
+        prefs.edit().putInt("last_freeze_reset_month", month).apply()
+    }
+
     fun updateFocusDuration(minutes: Int) {
         prefs.edit().putInt("focus_duration_minutes", minutes).apply()
         _focusDurationMinutes.value = minutes
