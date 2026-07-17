@@ -61,10 +61,4 @@ object RepositoryModule {
     fun provideMockRepository(db: AppDatabase, syncDao: SyncDao): MockRepository {
         return MockRepository(db, syncDao)
     }
-
-    @Provides
-    @Singleton
-    fun provideAdminRepository(): com.example.data.admin.AdminRepository {
-        return com.example.data.admin.AdminRepository()
-    }
 }

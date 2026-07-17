@@ -84,9 +84,11 @@ class AnalyticsViewModel @Inject constructor(
     private val syllabusDao: SyllabusDao,
     private val revisionDao: RevisionDao,
     private val focusDao: FocusDao,
-    private val settingsRepository: SettingsRepository,
-    private val adminRepo: com.example.data.admin.AdminRepository
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
+
+    // Create AdminRepository internally to avoid Hilt KSP resolution issues
+    private val adminRepo = com.example.data.admin.AdminRepository()
 
     val uiState: StateFlow<AnalyticsUiState> = combine(
         syllabusDao.getAllSubjectsWithTopics(),
