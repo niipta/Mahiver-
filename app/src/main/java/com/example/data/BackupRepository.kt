@@ -106,6 +106,14 @@ class BackupRepository(private val context: Context) {
                     backupData.mockQuestions.forEach { db.mockDao().insertQuestionLog(it) }
                 }
 
+                // Trigger cloud sync after restore so restored data goes to Firestore
+                try {
+                    val syncRequest = androidx.work.OneTimeWorkRequestBuilder<com.example.data.sync.SyncWorker>().build()
+                    androidx.work.WorkManager.getInstance(context).enqueue(syncRequest)
+                } catch (e: Exception) {
+                    // Non-critical — sync can be triggered manually later
+                }
+
                 val summary = "${backupData.subjects.size} subjects, ${backupData.focusSessions.size} sessions, ${backupData.mockTests.size} mocks"
                 Result.success(summary)
             } catch (e: Exception) {
