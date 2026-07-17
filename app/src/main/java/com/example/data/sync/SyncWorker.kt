@@ -146,7 +146,7 @@ class SyncWorker @AssistedInject constructor(
             // 10. Sync user profile (for leaderboard)
             val settingsRepo = com.example.data.SettingsRepository.getInstance(applicationContext)
             val lifetimeFocusMinutes = sessions.filter { it.sessionType in listOf("Focus", "Study") }.sumOf { it.actualDurationSeconds / 60 }
-            val topicsCompleted = subjects.sumOf { it.completedTopics }
+            val topicsCompleted = topics.count { it.isCompleted }
             val revisionsDone = revisions.count { it.isCompleted }
             val currentStreak = settingsRepo.currentStreak.value
             val totalPoints = lifetimeFocusMinutes + (topicsCompleted * 50L) + (currentStreak * 10L) + (revisionsDone * 20L)
