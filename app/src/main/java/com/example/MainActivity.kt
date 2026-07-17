@@ -261,6 +261,12 @@ class MainActivity : ComponentActivity() {
                 val viewModel = androidx.hilt.navigation.compose.hiltViewModel<com.example.ui.backup.BackupRestoreViewModel>()
                 com.example.ui.backup.BackupRestoreScreen(navController = navController, viewModel = viewModel)
             }
+            composable("admin") {
+                com.example.ui.admin.AdminScreen(navController = navController)
+            }
+            composable("subscription") {
+                com.example.ui.subscription.SubscriptionScreen(navController = navController)
+            }
         }
       }
     }

@@ -225,6 +225,24 @@ fun MoreScreen(navController: NavController, viewModel: MoreViewModel = hiltView
                 Column(verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)) {
                     SectionTitle("Account")
                     MoreMenuItem(
+                        icon = Icons.Rounded.WorkspacePremium,
+                        title = "Subscription",
+                        subtitle = "Manage your subscription",
+                        onClick = {
+                            haptics.tap()
+                            navController.navigate("subscription")
+                        }
+                    )
+                    MoreMenuItem(
+                        icon = Icons.Rounded.AdminPanelSettings,
+                        title = "Admin Panel",
+                        subtitle = "Admin access only",
+                        onClick = {
+                            haptics.tap()
+                            navController.navigate("admin")
+                        }
+                    )
+                    MoreMenuItem(
                         icon = Icons.Rounded.Logout,
                         title = "Sign Out",
                         subtitle = "Cloud data safe rahega",
@@ -508,6 +526,8 @@ fun MoreScreen(navController: NavController, viewModel: MoreViewModel = hiltView
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    com.example.ui.components.MahirWatermark()
                 }
             }
         }

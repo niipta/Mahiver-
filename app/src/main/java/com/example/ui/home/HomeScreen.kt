@@ -176,6 +176,11 @@ fun HomeScreen(
                         RecentActivitySection(state, navController)
                     }
                 }
+
+                // Mahir watermark
+                item {
+                    com.example.ui.components.MahirWatermark()
+                }
             }
             } // end else (loading state)
         }

@@ -84,7 +84,8 @@ class AnalyticsViewModel @Inject constructor(
     private val syllabusDao: SyllabusDao,
     private val revisionDao: RevisionDao,
     private val focusDao: FocusDao,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val adminRepo: com.example.data.admin.AdminRepository
 ) : ViewModel() {
 
     val uiState: StateFlow<AnalyticsUiState> = combine(
@@ -171,10 +172,10 @@ class AnalyticsViewModel @Inject constructor(
         val totalPoints = lifetimeFocusTime + (completedTopics * 50L) + (currentStreak * 10L) + (revisionsDone * 20L)
 
         // === LEADERBOARD ===
-        // Build a mock leaderboard with the current user + some AI-generated
-        // competitors so the user has motivation. In a real SaaS app this would
-        // come from Firestore, but for now we generate it locally.
-        val leaderboard = buildLeaderboard(userName, totalPoints, currentStreak, longestStreak)
+        // Build leaderboard with just current user locally (Firestore fetch is async)
+        val leaderboard = listOf(
+            LeaderboardEntry(rank = 1, name = userName, points = totalPoints, streak = currentStreak, isCurrentUser = true)
+        )
 
         // === STREAK FREEZE MONTHLY RESET ===
         // Check if we need to reset monthly streak freezes (4 free per month)
@@ -219,6 +220,32 @@ class AnalyticsViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = AnalyticsUiState()
     )
+
+    /**
+     * Fetches real leaderboard from Firestore.
+     * Returns the leaderboard list — caller can use it.
+     */
+    suspend fun fetchLeaderboard(): List<LeaderboardEntry> {
+        return try {
+            val firestoreUsers = adminRepo.getAllUsers()
+            if (firestoreUsers.isNotEmpty()) {
+                val currentUid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+                firestoreUsers.mapIndexed { index, user ->
+                    LeaderboardEntry(
+                        rank = index + 1,
+                        name = user.name.ifBlank { "User" },
+                        points = user.points,
+                        streak = user.streak,
+                        isCurrentUser = user.uid == currentUid
+                    )
+                }
+            } else {
+                emptyList()
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
 
     /**
      * Builds 35 calendar days (5 weeks) for the heatmap.
@@ -281,24 +308,35 @@ class AnalyticsViewModel @Inject constructor(
     }
 
     /**
-     * Builds a leaderboard with ONLY the real user's data.
-     * No fake competitors — when Firestore sync is enabled and other users
-     * join, this will pull real data from the cloud.
+     * Builds a leaderboard from REAL Firestore data.
+     * Pulls all users' profiles from Firestore and sorts by points.
+     * Falls back to just the current user if Firestore is unavailable.
      */
-    private fun buildLeaderboard(
+    private suspend fun buildLeaderboard(
         userName: String,
         userPoints: Long,
         userStreak: Int,
         userLongestStreak: Int
     ): List<LeaderboardEntry> {
-        return listOf(
-            LeaderboardEntry(
-                rank = 1,
-                name = userName,
-                points = userPoints,
-                streak = userStreak,
-                isCurrentUser = true
-            )
-        )
+        return try {
+            val firestoreUsers = adminRepo.getAllUsers()
+            if (firestoreUsers.isEmpty()) {
+                // No Firestore data — show just current user
+                listOf(LeaderboardEntry(rank = 1, name = userName, points = userPoints, streak = userStreak, isCurrentUser = true))
+            } else {
+                val currentUid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+                firestoreUsers.mapIndexed { index, user ->
+                    LeaderboardEntry(
+                        rank = index + 1,
+                        name = user.name.ifBlank { "User" },
+                        points = user.points,
+                        streak = user.streak,
+                        isCurrentUser = user.uid == currentUid
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            listOf(LeaderboardEntry(rank = 1, name = userName, points = userPoints, streak = userStreak, isCurrentUser = true))
+        }
     }
 }
