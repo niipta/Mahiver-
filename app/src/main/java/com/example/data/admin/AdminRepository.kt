@@ -39,7 +39,7 @@ data class UserProfile(
 /**
  * Repository for admin operations via Firestore.
  */
-class AdminRepository @javax.inject.Inject constructor() {
+class AdminRepository() {
 
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
