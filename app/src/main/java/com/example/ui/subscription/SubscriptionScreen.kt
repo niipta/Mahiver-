@@ -26,9 +26,9 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class SubscriptionViewModel @Inject constructor(
-    private val repo: AdminRepository
-) : ViewModel() {
+class SubscriptionViewModel @Inject constructor() : ViewModel() {
+
+    private val repo = AdminRepository()
     private val _config = MutableStateFlow(AppConfig())
     val config: StateFlow<AppConfig> = _config.asStateFlow()
 
