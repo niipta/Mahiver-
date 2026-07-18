@@ -59,6 +59,13 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
+        <!-- Firebase init provider — runs before Application.onCreate() -->
+        <provider
+            android:name=".FirebaseInitProvider"
+            android:authorities="${applicationId}.firebaseinit"
+            android:exported="false"
+            android:initOrder="100" />
+
         <receiver
             android:name=".widget.MahirWidgetReceiver"
             android:exported="true">
