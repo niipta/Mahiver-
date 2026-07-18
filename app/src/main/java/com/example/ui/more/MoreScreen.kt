@@ -189,12 +189,12 @@ fun MoreScreen(navController: NavController, viewModel: MoreViewModel = hiltView
                         }
                     )
                     MoreMenuItem(
-                        icon = Icons.Rounded.Analytics,
-                        title = "Analytics",
-                        subtitle = "Track your study progress",
+                        icon = Icons.Rounded.Quiz,
+                        title = "Mock Tests",
+                        subtitle = "Analysis planner & test logs",
                         onClick = {
                             haptics.tap()
-                            navController.navigate("analytics")
+                            navController.navigate("mocks")
                         }
                     )
                     MoreMenuItem(

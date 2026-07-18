@@ -17,8 +17,8 @@ android {
     applicationId = "com.aistudio.mahirverse.xjklqa"
     minSdk = 24
     targetSdk = 35
-    versionCode = 13
-    versionName = "4.4"
+    versionCode = 14
+    versionName = "4.5"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

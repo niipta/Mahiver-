@@ -2,9 +2,38 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="192dp"
     android:height="192dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Graduation cap for splash screen — matches launcher icon -->
     <path
-        android:fillColor="#D4A853"
-        android:pathData="M12,2L22,8V16L12,22L2,16V8L12,2M12,4.33L4,9.13V14.87L12,19.67L20,14.87V9.13L12,4.33ZM12,6.5L17.5,9.8L12,13.1L6.5,9.8L12,6.5Z"/>
+        android:pathData="M 54 28 L 84 42 L 54 56 L 24 42 Z"
+        android:fillColor="#D4A853" />
+
+    <path
+        android:pathData="M 54 56 L 84 42 L 84 45 L 54 59 L 24 45 L 24 42 Z"
+        android:fillColor="#8B6914" />
+
+    <path
+        android:pathData="M 38 56 L 70 56 Q 72 56 72 60 L 72 72 Q 72 78 66 78 L 42 78 Q 36 78 36 72 L 36 60 Q 36 56 38 56 Z"
+        android:fillColor="#B08433" />
+
+    <path
+        android:pathData="M 42 64 L 66 64"
+        android:strokeColor="#D4A853"
+        android:strokeWidth="1.5" />
+
+    <path
+        android:pathData="M 78 42 L 78 58"
+        android:strokeColor="#D4A853"
+        android:strokeWidth="2" />
+
+    <path
+        android:pathData="M 76 56 L 80 56 L 80 60 L 76 60 Z"
+        android:fillColor="#D4A853" />
+
+    <path
+        android:pathData="M 76 60 L 75 70 M 77 60 L 77 72 M 78 60 L 79 72 M 80 60 L 81 70"
+        android:strokeColor="#F0D080"
+        android:strokeWidth="1.2" />
 </vector>
