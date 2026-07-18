@@ -167,6 +167,45 @@ fun MoreScreen(navController: NavController, viewModel: MoreViewModel = hiltView
                 }
             }
 
+            // === ACCOUNT SECTION ===
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)) {
+                    SectionTitle("Account")
+                    MoreMenuItem(
+                        icon = Icons.Rounded.WorkspacePremium,
+                        title = "Subscription",
+                        subtitle = "Manage your subscription",
+                        onClick = {
+                            haptics.tap()
+                            navController.navigate("subscription")
+                        }
+                    )
+                    MoreMenuItem(
+                        icon = Icons.Rounded.AdminPanelSettings,
+                        title = "Admin Panel",
+                        subtitle = "Admin access only",
+                        onClick = {
+                            haptics.tap()
+                            navController.navigate("admin")
+                        }
+                    )
+                    MoreMenuItem(
+                        icon = Icons.Rounded.Logout,
+                        title = "Sign Out",
+                        subtitle = "Cloud data safe rahega",
+                        onClick = {
+                            haptics.tap()
+                            com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
+                            val intent = android.content.Intent(context, com.example.MainActivity::class.java).apply {
+                                flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
+                            }
+                            context.startActivity(intent)
+                        },
+                        isDanger = true
+                    )
+                }
+            }
+
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)) {
                     SectionTitle("App Features")
@@ -234,6 +273,28 @@ fun MoreScreen(navController: NavController, viewModel: MoreViewModel = hiltView
                         onClick = {
                             haptics.tap()
                             navController.navigate("backup")
+                        }
+                    )
+                    MoreMenuItem(
+                        icon = Icons.Rounded.Sync,
+                        title = "Cloud Sync",
+                        subtitle = "Sync data to Firestore",
+                        onClick = {
+                            haptics.tap()
+                            val syncRequest = androidx.work.OneTimeWorkRequestBuilder<com.example.data.sync.SyncWorker>().build()
+                            androidx.work.WorkManager.getInstance(context).enqueue(syncRequest)
+                            android.widget.Toast.makeText(context, "Cloud sync started", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                    MoreMenuItem(
+                        icon = Icons.Rounded.CloudDownload,
+                        title = "Restore from Cloud",
+                        subtitle = "Pull data from Firestore",
+                        onClick = {
+                            haptics.tap()
+                            val restoreRequest = androidx.work.OneTimeWorkRequestBuilder<com.example.data.sync.RestoreWorker>().build()
+                            androidx.work.WorkManager.getInstance(context).enqueue(restoreRequest)
+                            android.widget.Toast.makeText(context, "Cloud restore started", android.widget.Toast.LENGTH_SHORT).show()
                         }
                     )
                     MoreMenuItem(

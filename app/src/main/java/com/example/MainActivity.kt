@@ -186,9 +186,15 @@ class MainActivity : ComponentActivity() {
     setContent {
       MyApplicationTheme {
         val navController = rememberNavController()
-        val startDest = if (isOnboardingComplete()) "home" else "onboarding"
+        // Auth-first flow: no user → auth, user but no onboarding → onboarding, else → home
+        val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+        val startDest = when {
+            currentUser == null -> "auth"
+            !isOnboardingComplete() -> "onboarding"
+            else -> "home"
+        }
         NavHost(
-            navController = navController, 
+            navController = navController,
             startDestination = startDest,
             enterTransition = {
                 androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(300)) + 
@@ -207,6 +213,9 @@ class MainActivity : ComponentActivity() {
                 androidx.compose.animation.slideOutHorizontally(androidx.compose.animation.core.tween(200), targetOffsetX = { it / 4 })
             }
         ) {
+            composable("auth") {
+                com.example.ui.auth.AuthScreen(navController = navController)
+            }
             composable("onboarding") {
                 com.example.ui.onboarding.OnboardingScreen(navController = navController)
             }
@@ -258,6 +267,12 @@ class MainActivity : ComponentActivity() {
             composable("backup") {
                 val viewModel = androidx.hilt.navigation.compose.hiltViewModel<com.example.ui.backup.BackupRestoreViewModel>()
                 com.example.ui.backup.BackupRestoreScreen(navController = navController, viewModel = viewModel)
+            }
+            composable("admin") {
+                com.example.ui.admin.AdminScreen(navController = navController)
+            }
+            composable("subscription") {
+                com.example.ui.subscription.SubscriptionScreen(navController = navController)
             }
         }
       }
