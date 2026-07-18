@@ -16,16 +16,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.dp
 import com.example.ui.theme.Dimens
 import com.example.ui.theme.MahirColors
 
-/**
- * Premium card component — clean border, no shadow, subtle press animation.
- * SaaS-level polish inspired by Linear/Notion.
- */
 @Composable
 fun MahirCard(
     modifier: Modifier = Modifier,
@@ -35,16 +30,15 @@ fun MahirCard(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed && onClick != null) 0.98f else 1f,
-        animationSpec = spring(dampingRatio = 0.7f, stiffness = 500f),
+    val scale by animateDpAsState(
+        targetValue = if (isPressed && onClick != null) (-1).dp else 0.dp,
+        animationSpec = spring(dampingRatio = 0.6f, stiffness = 400f),
         label = "cardScale"
     )
 
     Card(
         modifier = if (onClick != null) {
             modifier
-                .scale(scale)
                 .clickable(
                     interactionSource = interactionSource,
                     indication = androidx.compose.material3.ripple(),
@@ -60,17 +54,4 @@ fun MahirCard(
             content()
         }
     }
-}
-
-@Composable
-private fun animateFloatAsState(
-    targetValue: Float,
-    animationSpec: androidx.compose.animation.core.AnimationSpec<Float>,
-    label: String
-): androidx.compose.runtime.State<Float> {
-    return androidx.compose.animation.core.animateFloatAsState(
-        targetValue = targetValue,
-        animationSpec = animationSpec,
-        label = label
-    )
 }

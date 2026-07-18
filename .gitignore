@@ -15,5 +15,4 @@
 .cxx
 local.properties
 .env
-# debug.keystore is committed — fixed signing key for CI APK updates
-my-upload-key.jks
+debug.keystore

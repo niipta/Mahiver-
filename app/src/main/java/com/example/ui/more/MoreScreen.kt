@@ -33,7 +33,6 @@ import com.example.ui.components.MahirCard
 import com.example.ui.components.SectionTitle
 import com.example.ui.theme.Dimens
 import com.example.ui.theme.MahirColors
-import com.example.ui.theme.StatColors
 import com.example.util.rememberMahirHaptics
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,20 +49,13 @@ fun MoreScreen(navController: NavController, viewModel: MoreViewModel = hiltView
     val hapticsEnabled by viewModel.hapticsEnabled.collectAsStateWithLifecycle()
     val dailyGoalMinutes by viewModel.dailyGoalMinutes.collectAsStateWithLifecycle()
     val ambientSoundEnabled by viewModel.ambientSoundEnabled.collectAsStateWithLifecycle()
-    val geminiApiKey by viewModel.geminiApiKey.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var showNameDialog by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
-    var showApiKeyDialog by remember { mutableStateOf(false) }
     var showDndPrompt by remember { mutableStateOf(false) }
     var showDailyGoalDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
     var showResetDialog by remember { mutableStateOf(false) }
-    var showSignOutDialog by remember { mutableStateOf(false) }
-
-    // Firebase auth state
-    val auth = com.google.firebase.auth.FirebaseAuth.getInstance()
-    val currentUser = auth.currentUser
 
     ThemeDialog(
         showDialog = showThemeDialog,
@@ -106,51 +98,6 @@ fun MoreScreen(navController: NavController, viewModel: MoreViewModel = hiltView
                 showResetDialog = false
             },
             onDismiss = { showResetDialog = false }
-        )
-    }
-    if (showApiKeyDialog) {
-        ApiKeyDialog(
-            currentKey = geminiApiKey,
-            onSave = {
-                haptics.confirm()
-                viewModel.updateApiKey(it)
-                showApiKeyDialog = false
-            },
-            onClear = {
-                haptics.reject()
-                viewModel.clearApiKey()
-                showApiKeyDialog = false
-            },
-            onDismiss = { showApiKeyDialog = false }
-        )
-    }
-    if (showSignOutDialog) {
-        AlertDialog(
-            onDismissRequest = { showSignOutDialog = false },
-            title = { Text("Sign Out?", color = MaterialTheme.colorScheme.onBackground) },
-            text = { Text("Aapka data cloud pe sync rahega. Wapas login karke access kar sakte ho.", color = MaterialTheme.colorScheme.onSurfaceVariant) },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        haptics.confirm()
-                        auth.signOut()
-                        showSignOutDialog = false
-                        // Restart to auth screen
-                        val intent = android.content.Intent(context, com.example.MainActivity::class.java).apply {
-                            flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
-                        }
-                        context.startActivity(intent)
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) { Text("Sign Out", color = Color.White) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showSignOutDialog = false }) {
-                    Text("Cancel", color = MaterialTheme.colorScheme.onBackground)
-                }
-            },
-            containerColor = MahirColors.cardBackground(),
-            shape = RoundedCornerShape(Dimens.cardRadius)
         )
     }
 
@@ -211,47 +158,12 @@ fun MoreScreen(navController: NavController, viewModel: MoreViewModel = hiltView
                             )
                             Spacer(modifier = Modifier.height(Dimens.spacingXs))
                             Text(
-                                text = currentUser?.email ?: "Guest user",
+                                text = "Tap to edit your name",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
-                }
-            }
-
-            // === ACCOUNT SECTION ===
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)) {
-                    SectionTitle("Account")
-                    MoreMenuItem(
-                        icon = Icons.Rounded.WorkspacePremium,
-                        title = "Subscription",
-                        subtitle = "Manage your subscription",
-                        onClick = {
-                            haptics.tap()
-                            navController.navigate("subscription")
-                        }
-                    )
-                    MoreMenuItem(
-                        icon = Icons.Rounded.AdminPanelSettings,
-                        title = "Admin Panel",
-                        subtitle = "Admin access only",
-                        onClick = {
-                            haptics.tap()
-                            navController.navigate("admin")
-                        }
-                    )
-                    MoreMenuItem(
-                        icon = Icons.Rounded.Logout,
-                        title = "Sign Out",
-                        subtitle = "Cloud data safe rahega",
-                        onClick = {
-                            haptics.tap()
-                            showSignOutDialog = true
-                        },
-                        isDanger = true
-                    )
                 }
             }
 
@@ -277,12 +189,12 @@ fun MoreScreen(navController: NavController, viewModel: MoreViewModel = hiltView
                         }
                     )
                     MoreMenuItem(
-                        icon = Icons.Rounded.Quiz,
-                        title = "Mock Tests",
-                        subtitle = "Analysis planner & test logs",
+                        icon = Icons.Rounded.Analytics,
+                        title = "Analytics",
+                        subtitle = "Track your study progress",
                         onClick = {
                             haptics.tap()
-                            navController.navigate("mocks")
+                            navController.navigate("analytics")
                         }
                     )
                     MoreMenuItem(
@@ -292,22 +204,6 @@ fun MoreScreen(navController: NavController, viewModel: MoreViewModel = hiltView
                         onClick = {
                             haptics.tap()
                             navController.navigate("history")
-                        }
-                    )
-                }
-            }
-
-            // === AI & Intelligence ===
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)) {
-                    SectionTitle("AI & Intelligence")
-                    MoreMenuItem(
-                        icon = Icons.Rounded.AutoAwesome,
-                        title = "Gemini API Key",
-                        subtitle = if (geminiApiKey.isBlank()) "Not configured — AI features disabled" else "Configured (${geminiApiKey.take(8)}…)",
-                        onClick = {
-                            haptics.tap()
-                            showApiKeyDialog = true
                         }
                     )
                 }
@@ -338,29 +234,6 @@ fun MoreScreen(navController: NavController, viewModel: MoreViewModel = hiltView
                         onClick = {
                             haptics.tap()
                             navController.navigate("backup")
-                        }
-                    )
-                    MoreMenuItem(
-                        icon = Icons.Rounded.Sync,
-                        title = "Cloud Sync",
-                        subtitle = "Sync data to Firestore (cloud backup)",
-                        onClick = {
-                            haptics.tap()
-                            // Trigger sync via WorkManager
-                            val syncRequest = androidx.work.OneTimeWorkRequestBuilder<com.example.data.sync.SyncWorker>().build()
-                            androidx.work.WorkManager.getInstance(context).enqueue(syncRequest)
-                            android.widget.Toast.makeText(context, "Cloud sync started — check back in a minute", android.widget.Toast.LENGTH_SHORT).show()
-                        }
-                    )
-                    MoreMenuItem(
-                        icon = Icons.Rounded.CloudDownload,
-                        title = "Restore from Cloud",
-                        subtitle = "Pull data from Firestore to this device",
-                        onClick = {
-                            haptics.tap()
-                            val restoreRequest = androidx.work.OneTimeWorkRequestBuilder<com.example.data.sync.RestoreWorker>().build()
-                            androidx.work.WorkManager.getInstance(context).enqueue(restoreRequest)
-                            android.widget.Toast.makeText(context, "Cloud restore started — check back in a minute", android.widget.Toast.LENGTH_SHORT).show()
                         }
                     )
                     MoreMenuItem(
@@ -526,8 +399,6 @@ fun MoreScreen(navController: NavController, viewModel: MoreViewModel = hiltView
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    com.example.ui.components.MahirWatermark()
                 }
             }
         }
@@ -894,82 +765,6 @@ fun ResetAppDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text("Cancel", color = MaterialTheme.colorScheme.onBackground)
-            }
-        },
-        containerColor = MahirColors.cardBackground(),
-        shape = RoundedCornerShape(Dimens.cardRadius)
-    )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ApiKeyDialog(
-    currentKey: String,
-    onSave: (String) -> Unit,
-    onClear: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    var keyInput by remember { mutableStateOf(currentKey) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Rounded.AutoAwesome, contentDescription = null, tint = StatColors.purple())
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Gemini API Key", style = MaterialTheme.typography.titleMedium)
-            }
-        },
-        text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    "Paste your Google Gemini API key to enable AI features (Smart Plan, Syllabus Auto-Generate).",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                OutlinedTextField(
-                    value = keyInput,
-                    onValueChange = { keyInput = it },
-                    label = { Text("API Key") },
-                    placeholder = { Text("AIza…") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = StatColors.purple(),
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent
-                    )
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    "Get a free key at: aistudio.google.com/apikey",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = { onSave(keyInput.trim()) },
-                colors = ButtonDefaults.buttonColors(containerColor = StatColors.purple()),
-                shape = RoundedCornerShape(Dimens.cardRadiusSm),
-                enabled = keyInput.isNotBlank()
-            ) {
-                Text("Save", color = Color.White)
-            }
-        },
-        dismissButton = {
-            Row {
-                if (currentKey.isNotBlank()) {
-                    TextButton(onClick = onClear) {
-                        Text("Clear", color = MaterialTheme.colorScheme.error)
-                    }
-                }
-                TextButton(onClick = onDismiss) {
-                    Text("Cancel", color = MaterialTheme.colorScheme.onBackground)
-                }
             }
         },
         containerColor = MahirColors.cardBackground(),

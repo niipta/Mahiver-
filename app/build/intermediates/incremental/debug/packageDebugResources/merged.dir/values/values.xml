@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="com_google_android_gms_fonts_certs">
+        <item>@array/com_google_android_gms_fonts_certs_dev</item>
+        <item>@array/com_google_android_gms_fonts_certs_prod</item>
+    </array>
+    <string-array name="com_google_android_gms_fonts_certs_dev">
+        <item>MIIEQzCCAyugAwIBAgIJAMLgh0ZkSjCNMA0GCSqGSIb3DQEBBAUAMHQxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1Nb3VudGFpbiBWaWV3MRQwEgYDVQQKEwtHb29nbGUgSW5jLjEQMA4GA1UECxMHQW5kcm9pZDEQMA4GA1UEAxMHQW5kcm9pZDAeFw0wODA0MTUyMzM2NTZaFw0zODA5MDIyMzM2NTZaMHQxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1Nb3VudGFpbiBWaWV3MRQwEgYDVQQKEwtHb29nbGUgSW5jLjEQMA4GA1UECxMHQW5kcm9pZDEQMA4GA1UEAxMHQW5kcm9pZDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKyKvO7VTA44hGqH6O6U4mEqA4x4Rz0t0E5T22y5q3kR6L6a5+WdI0u7h9f5/Z1rE/x2YyK7p7W8rI0tH9QzV9vW0oQp6+U8Ua/r7Z4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h</item>
+    </string-array>
+    <string-array name="com_google_android_gms_fonts_certs_prod">
+        <item>MIIEQzCCAyugAwIBAgIJAMLgh0ZkSjCNMA0GCSqGSIb3DQEBBAUAMHQxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1Nb3VudGFpbiBWaWV3MRQwEgYDVQQKEwtHb29nbGUgSW5jLjEQMA4GA1UECxMHQW5kcm9pZDEQMA4GA1UEAxMHQW5kcm9pZDAeFw0wODA0MTUyMzM2NTZaFw0zODA5MDIyMzM2NTZaMHQxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1Nb3VudGFpbiBWaWV3MRQwEgYDVQQKEwtHb29nbGUgSW5jLjEQMA4GA1UECxMHQW5kcm9pZDEQMA4GA1UEAxMHQW5kcm9pZDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKyKvO7VTA44hGqH6O6U4mEqA4x4Rz0t0E5T22y5q3kR6L6a5+WdI0u7h9f5/Z1rE/x2YyK7p7W8rI0tH9QzV9vW0oQp6+U8Ua/r7Z4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h4m6z2s9X9h</item>
+    </string-array>
+    <string name="app_name">MahirVerse</string>
+    <string name="app_widget_analytics_description">Daily study hours and streak</string>
+    <string name="app_widget_focus_timer_description">Live Pomodoro focus timer</string>
+    <string name="app_widget_planner_description">Today\'s study targets</string>
+    <string name="app_widget_revision_description">Quick access to pending revisions</string>
+    <string name="gcm_defaultSenderId" translatable="false">1098634430891</string>
+    <string name="google_api_key" translatable="false">AIzaSyDQ3BLcTVYUdPONJDyicNyn4Ij3jUH-mSU</string>
+    <string name="google_app_id" translatable="false">1:1098634430891:android:1e10b5056c13af8f33eaee</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyDQ3BLcTVYUdPONJDyicNyn4Ij3jUH-mSU</string>
+    <string name="google_storage_bucket" translatable="false">mahirverse-1d7ff.firebasestorage.app</string>
+    <string name="project_id" translatable="false">mahirverse-1d7ff</string>
+    <style name="Theme.MyApplication" parent="android:Theme.DeviceDefault.NoActionBar"/>
+    <style name="Theme.SplashScreen.Mahir" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#0A0B10</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
+        <item name="postSplashScreenTheme">@style/Theme.MyApplication</item>
+    </style>
+</resources>

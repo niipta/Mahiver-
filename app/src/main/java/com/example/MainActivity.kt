@@ -131,13 +131,20 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // Schedule Firestore Sync
+    // Schedule Firestore Sync (periodic every 15 min)
     val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES).build()
     WorkManager.getInstance(this).enqueueUniquePeriodicWork(
         "FirestoreSyncWork",
         ExistingPeriodicWorkPolicy.KEEP,
         syncRequest
     )
+
+    // Trigger immediate one-time sync on app startup (if user is logged in)
+    if (com.google.firebase.auth.FirebaseAuth.getInstance().currentUser != null) {
+        val immediateSync = androidx.work.OneTimeWorkRequestBuilder<SyncWorker>().build()
+        WorkManager.getInstance(this).enqueue(immediateSync)
+        android.util.Log.d("MainActivity", "Auto-sync triggered on startup")
+    }
 
     // Schedule Smart Notification Engine
     val smartNotificationRequest = PeriodicWorkRequestBuilder<com.example.service.SmartNotificationWorker>(3, TimeUnit.HOURS)
@@ -179,15 +186,9 @@ class MainActivity : ComponentActivity() {
     setContent {
       MyApplicationTheme {
         val navController = rememberNavController()
-        // Auth check: if not logged in → auth screen, if logged in but onboarding not done → onboarding, else → home
-        val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
-        val startDest = when {
-            currentUser == null -> "auth"
-            !isOnboardingComplete() -> "onboarding"
-            else -> "home"
-        }
+        val startDest = if (isOnboardingComplete()) "home" else "onboarding"
         NavHost(
-            navController = navController,
+            navController = navController, 
             startDestination = startDest,
             enterTransition = {
                 androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(300)) + 
@@ -206,9 +207,6 @@ class MainActivity : ComponentActivity() {
                 androidx.compose.animation.slideOutHorizontally(androidx.compose.animation.core.tween(200), targetOffsetX = { it / 4 })
             }
         ) {
-            composable("auth") {
-                com.example.ui.auth.AuthScreen(navController = navController)
-            }
             composable("onboarding") {
                 com.example.ui.onboarding.OnboardingScreen(navController = navController)
             }
@@ -260,12 +258,6 @@ class MainActivity : ComponentActivity() {
             composable("backup") {
                 val viewModel = androidx.hilt.navigation.compose.hiltViewModel<com.example.ui.backup.BackupRestoreViewModel>()
                 com.example.ui.backup.BackupRestoreScreen(navController = navController, viewModel = viewModel)
-            }
-            composable("admin") {
-                com.example.ui.admin.AdminScreen(navController = navController)
-            }
-            composable("subscription") {
-                com.example.ui.subscription.SubscriptionScreen(navController = navController)
             }
         }
       }

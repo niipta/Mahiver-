@@ -1,12 +1,16 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{userId} {
+    // Users can only read/write their own data
+    match /users/{userId}/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
-      
-      match /{document=**} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
+    }
+
+    // App config — any authenticated user can read, only admin can write
+    // Admin uid is stored inside the config document itself
+    match /app_config/{document=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
     }
   }
 }

@@ -110,32 +110,20 @@ class SmartNotificationWorker @dagger.assisted.AssistedInject constructor(
             val todayStart = Calendar.getInstance().apply {
                 set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0)
             }.timeInMillis
-
+            
             val yesterdayStart = Calendar.getInstance().apply {
                 add(Calendar.DAY_OF_YEAR, -1)
                 set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0)
             }.timeInMillis
-
+            
             val sessions = db.focusDao().getAllSessions().first()
-
+            
             val todaySessions = sessions.filter { it.timestamp >= todayStart }
             val yesterdaySessions = sessions.filter { it.timestamp in yesterdayStart until todayStart }
-
+            
             val todayFocusMin = todaySessions.sumOf { it.actualDurationSeconds } / 60
             val yesterdayFocusMin = yesterdaySessions.sumOf { it.actualDurationSeconds } / 60
-            val dailyGoal = settingsRepository.dailyGoalMinutes.value
-
-            // Night guilt-trip: if it's 9 PM or later and user hasn't met their goal
-            if (currentHour >= 21 && todayFocusMin < dailyGoal) {
-                val guiltMessage = com.example.data.ai.MotivationalQuotes.nightGuiltTrip(todayFocusMin)
-                showNotification(
-                    id = 1106,
-                    title = if (todayFocusMin == 0) "Aaj kuch nahi padha?" else "Goal poora nahi hua",
-                    text = guiltMessage
-                )
-                return Result.success()
-            }
-
+            
             if (yesterdayFocusMin > 0 && todayFocusMin < yesterdayFocusMin / 2) {
                 showNotification(
                     id = 1103,

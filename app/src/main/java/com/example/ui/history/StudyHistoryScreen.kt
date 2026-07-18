@@ -404,10 +404,10 @@ fun DailySummaryCard(
     onDeleteGesture: (FocusSessionEntity) -> Unit
 ) {
     var expanded by remember { mutableStateOf(true) }
-
+    
     val format = SimpleDateFormat("dd MMMM yyyy", Locale.getDefault())
     val actualDate = format.format(Date(summary.dateMillis))
-
+    
     val h = summary.totalStudyMinutes / 60
     val m = summary.totalStudyMinutes % 60
     val studyTimeStr = if (h > 0) "${h}h ${m}m" else "${m}m"
@@ -419,56 +419,82 @@ fun DailySummaryCard(
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
     ) {
         Column {
-            // Header row — tap to expand/collapse
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { expanded = !expanded }
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                    .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
-                        modifier = Modifier.size(36.dp).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), RoundedCornerShape(10.dp)),
+                        modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f), RoundedCornerShape(10.dp)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Rounded.CalendarToday, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Rounded.CalendarToday, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(summary.displayDate, color = MaterialTheme.colorScheme.onBackground, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                         if (summary.displayDate == "Today" || summary.displayDate == "Yesterday") {
-                            Text(actualDate, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
+                            Text(actualDate, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                         }
                     }
                 }
-
+                
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(studyTimeStr, color = MaterialTheme.colorScheme.primary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("·", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("${summary.totalSessions}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(studyTimeStr, color = Color(0xFF8A74F9), fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                        Text("${summary.totalSessions} Sessions", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
                     Icon(
                         imageVector = if (expanded) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp)
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
-
+            
             AnimatedVisibility(visible = expanded) {
-                Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
+                Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
                     summary.sessions.forEachIndexed { index, session ->
-                        SessionHistoryItem(
-                            session = session,
-                            onActionClick = { onActionClick(session) }
+                        val dismissState = rememberSwipeToDismissBoxState(
+                            positionalThreshold = { distance -> distance * 0.5f },
+                            confirmValueChange = { dismissValue ->
+                                if (dismissValue == SwipeToDismissBoxValue.EndToStart) {
+                                    onDeleteGesture(session)
+                                    true // dismiss visually; dialog still appears
+                                } else false
+                            }
                         )
+
+                        SwipeToDismissBox(
+                            state = dismissState,
+                            backgroundContent = {
+                                val direction = dismissState.dismissDirection
+                                val color = if (direction != SwipeToDismissBoxValue.Settled) MaterialTheme.colorScheme.error else Color.Transparent
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(color)
+                                        .padding(horizontal = 20.dp),
+                                    contentAlignment = Alignment.CenterEnd
+                                ) {
+                                    Icon(Icons.Rounded.Delete, contentDescription = "Delete", tint = Color.White)
+                                }
+                            },
+                            content = {
+                                SessionHistoryItem(
+                                    session = session,
+                                    onLongClick = { onActionClick(session) }
+                                )
+                            }
+                        )
+
                         if (index < summary.sessions.size - 1) {
-                            HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f), modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp))
+                            HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f), modifier = Modifier.padding(vertical = 4.dp))
                         }
                     }
                 }
@@ -478,81 +504,78 @@ fun DailySummaryCard(
 }
 
 @Composable
-fun SessionHistoryItem(session: FocusSessionEntity, onActionClick: () -> Unit) {
+fun SessionHistoryItem(session: FocusSessionEntity, onLongClick: () -> Unit) {
     val durationMin = session.actualDurationSeconds / 60
     val durationStr = if (durationMin >= 60) "${durationMin/60}h ${durationMin%60}m" else "${durationMin}m"
-
+    
+    val endTime = Date(session.timestamp)
+    val startTime = Date(session.timestamp - (session.actualDurationSeconds * 1000L))
     val timeFormat = SimpleDateFormat("hh:mm a", Locale.getDefault())
-    val timeStr = timeFormat.format(Date(session.timestamp))
-
+    val timeRangeStr = "${timeFormat.format(startTime)} - ${timeFormat.format(endTime)}"
+    
+    // Attempt to split topic from subtopic if stored as "Topic - Subtopic"
     val fullTopicStr = session.topicName ?: "Session"
     val parts = fullTopicStr.split(" - ")
     val mainTopic = parts[0]
     val subTopic = if (parts.size > 1) parts[1] else null
-
+    
+    // Subject Color Hash — use floorMod to avoid negative index from Int.MIN_VALUE
     val colors = listOf(MaterialTheme.colorScheme.primary, Color(0xFF4CAF50), Color(0xFFFF9100), Color(0xFFE91E63), Color(0xFF9C27B0))
     val subjectColor = colors[Math.floorMod(session.subjectName.hashCode(), colors.size)]
-
-    // Session type icon — differentiates Focus / Revision / Custom Task
-    val (sessionIcon, sessionIconTint) = when {
-        session.sessionType == "Revision" -> Icons.Rounded.Refresh to Color(0xFFFF9100)
-        session.subjectName == "Custom Task" -> Icons.Rounded.Edit to Color(0xFF9C27B0)
-        session.isDeepFocus -> Icons.Rounded.Bolt to Color(0xFF4CAF50)
-        else -> Icons.Rounded.Timer to MaterialTheme.colorScheme.primary
-    }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onActionClick() }
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .pointerInput(Unit) { detectTapGestures(onLongPress = { onLongClick() }) }
+            .padding(vertical = 12.dp)
+            .background(MaterialTheme.colorScheme.surface),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Session type icon — differentiates Focus/Revision/Custom
         Box(
-            modifier = Modifier.size(32.dp).background(sessionIconTint.copy(alpha = 0.12f), CircleShape),
+            modifier = Modifier.size(48.dp).background(subjectColor.copy(alpha = 0.15f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Icon(sessionIcon, contentDescription = null, tint = sessionIconTint, modifier = Modifier.size(16.dp))
+            Icon(Icons.Rounded.MenuBook, contentDescription = null, tint = subjectColor, modifier = Modifier.size(24.dp))
         }
-        Spacer(modifier = Modifier.width(12.dp))
-
+        
+        Spacer(modifier = Modifier.width(16.dp))
+        
         Column(modifier = Modifier.weight(1f)) {
+            // Subject Badge
+            Box(modifier = Modifier.background(subjectColor.copy(alpha = 0.2f), RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp)) {
+                Text(session.subjectName, color = subjectColor, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+            }
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = mainTopic,
                 color = MaterialTheme.colorScheme.onBackground,
-                fontSize = 14.sp,
+                fontSize = 15.sp,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            Spacer(modifier = Modifier.height(2.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            if (subTopic != null) {
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = session.subjectName,
-                    color = subjectColor,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold
+                    text = subTopic,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 12.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-                if (subTopic != null) {
-                    Text(" · ", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
-                    Text(subTopic, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-                Text(" · ", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
-                Text(timeStr, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
             }
         }
-
+        
         Spacer(modifier = Modifier.width(8.dp))
-
-        // Duration
-        Text(durationStr, color = MaterialTheme.colorScheme.primary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-
-        Spacer(modifier = Modifier.width(4.dp))
-
-        // 3-dot menu button — visible action trigger (replaces hidden long-press)
-        IconButton(onClick = onActionClick, modifier = Modifier.size(28.dp)) {
-            Icon(Icons.Rounded.MoreVert, contentDescription = "Options", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+        
+        Column(horizontalAlignment = Alignment.End) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Rounded.Timer, contentDescription = null, tint = Color(0xFF8A74F9), modifier = Modifier.size(14.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(durationStr, color = Color(0xFF8A74F9), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(timeRangeStr, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
         }
     }
 }

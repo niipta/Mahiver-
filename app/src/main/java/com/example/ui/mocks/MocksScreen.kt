@@ -554,7 +554,7 @@ private fun ErrorPatternSection(breakdown: List<ErrorCategoryBreakdown>) {
 // TOPIC WEIGHTAGE — table with accuracy bars + WEAK TOPIC tags
 // ============================================================
 @Composable
-private fun TopicWeightageSection(topics: List<TopicWeightage>) {
+private fun TopicWeightageSection(topics: List<com.example.data.TopicWeightage>) {
     Column(verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)) {
         SectionTitle("Topic Weightage")
         topics.take(10).forEach { topic ->
@@ -564,7 +564,7 @@ private fun TopicWeightageSection(topics: List<TopicWeightage>) {
 }
 
 @Composable
-private fun TopicWeightageRow(topic: TopicWeightage) {
+private fun TopicWeightageRow(topic: com.example.data.TopicWeightage) {
     val accuracyColor = when {
         topic.accuracy >= 75f -> StatColors.green()
         topic.accuracy >= 60f -> StatColors.amber()
@@ -638,7 +638,7 @@ private fun TopicWeightageRow(topic: TopicWeightage) {
 // SUBJECT PERFORMANCE CARDS
 // ============================================================
 @Composable
-private fun SubjectPerformanceSection(subjects: List<SubjectAnalytics>) {
+private fun SubjectPerformanceSection(subjects: List<com.example.data.SubjectAnalytics>) {
     Column(verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)) {
         SectionTitle("Subject Performance")
         subjects.forEach { subj ->
@@ -648,7 +648,7 @@ private fun SubjectPerformanceSection(subjects: List<SubjectAnalytics>) {
 }
 
 @Composable
-private fun SubjectPerformanceCard(subj: SubjectAnalytics) {
+private fun SubjectPerformanceCard(subj: com.example.data.SubjectAnalytics) {
     val accuracyColor = when {
         subj.accuracy >= 75f -> StatColors.green()
         subj.accuracy >= 50f -> StatColors.amber()

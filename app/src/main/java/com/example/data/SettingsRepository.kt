@@ -98,9 +98,6 @@ class SettingsRepository constructor(context: Context) {
     /**
      * Loads an API key from prefs. Returns empty string if user has explicitly cleared it
      * (stored as "__cleared__" sentinel), otherwise falls back to BuildConfig.
-     *
-     * Keys are obfuscated with XOR (not cryptographically secure, but better
-     * than plaintext — stops casual snooping via adb shell / backup extractors).
      */
     private fun loadApiKey(prefsKey: String, buildConfigFallback: String): String {
         val stored = prefs.getString(prefsKey, null)
@@ -108,51 +105,18 @@ class SettingsRepository constructor(context: Context) {
             stored == null -> buildConfigFallback
             stored == "__cleared__" -> ""
             stored.isBlank() -> buildConfigFallback
-            else -> deobfuscate(stored)
+            else -> stored
         }
     }
 
     fun updateApiKey(key: String) {
-        prefs.edit().putString("gemini_api_key", obfuscate(key)).apply()
+        prefs.edit().putString("gemini_api_key", key).apply()
         _geminiApiKey.value = key
     }
 
     fun clearApiKey() {
         prefs.edit().putString("gemini_api_key", "__cleared__").apply()
         _geminiApiKey.value = ""
-    }
-
-    /**
-     * Simple XOR obfuscation with a fixed key. This is NOT encryption — it
-     * just prevents the API key from appearing in plaintext when someone
-     * reads SharedPreferences via adb or a backup extractor.
-     * The output is Base64-encoded.
-     */
-    private fun obfuscate(plain: String): String {
-        if (plain.isEmpty()) return ""
-        val keyBytes = OBF_KEY.toByteArray(Charsets.UTF_8)
-        val plainBytes = plain.toByteArray(Charsets.UTF_8)
-        val out = ByteArray(plainBytes.size)
-        for (i in plainBytes.indices) {
-            out[i] = (plainBytes[i].toInt() xor keyBytes[i % keyBytes.size].toInt()).toByte()
-        }
-        return android.util.Base64.encodeToString(out, android.util.Base64.NO_WRAP)
-    }
-
-    private fun deobfuscate(encoded: String): String {
-        if (encoded.isEmpty()) return ""
-        return try {
-            val keyBytes = OBF_KEY.toByteArray(Charsets.UTF_8)
-            val encBytes = android.util.Base64.decode(encoded, android.util.Base64.NO_WRAP)
-            val out = ByteArray(encBytes.size)
-            for (i in encBytes.indices) {
-                out[i] = (encBytes[i].toInt() xor keyBytes[i % keyBytes.size].toInt()).toByte()
-            }
-            String(out, Charsets.UTF_8)
-        } catch (e: Exception) {
-            // If deobfuscation fails (old plaintext key), return as-is
-            encoded
-        }
     }
 
     fun updateUserName(name: String) {
@@ -251,20 +215,6 @@ class SettingsRepository constructor(context: Context) {
         _streakFreezesAvailable.value = current + 1
     }
 
-    fun setStreakFreezes(count: Int) {
-        prefs.edit().putInt("streak_freezes", count).apply()
-        _streakFreezesAvailable.value = count
-    }
-
-    // Monthly streak freeze reset — 4 free per month
-    fun getLastFreezeResetMonth(): Int {
-        return prefs.getInt("last_freeze_reset_month", -1)
-    }
-
-    fun setLastFreezeResetMonth(month: Int) {
-        prefs.edit().putInt("last_freeze_reset_month", month).apply()
-    }
-
     fun updateFocusDuration(minutes: Int) {
         prefs.edit().putInt("focus_duration_minutes", minutes).apply()
         _focusDurationMinutes.value = minutes
@@ -340,8 +290,6 @@ class SettingsRepository constructor(context: Context) {
     }
 
     companion object {
-        private const val OBF_KEY = "MahirVerse_2024_SecurityKey_v2"
-
         @Volatile
         private var INSTANCE: SettingsRepository? = null
 

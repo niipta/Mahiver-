@@ -32,22 +32,9 @@ class BackupRestoreViewModel @Inject constructor(
         viewModelScope.launch {
             val result = repository.createBackup(uri)
             if (result.isSuccess) {
-                val summary = result.getOrNull() ?: ""
-                _uiState.update {
-                    it.copy(
-                        isProcessing = false,
-                        message = if (summary.isNotEmpty()) "Backup saved! ($summary)" else "Backup saved successfully!"
-                    )
-                }
+                _uiState.update { it.copy(isProcessing = false, message = "Backup saved successfully!") }
             } else {
-                val errorMsg = result.exceptionOrNull()?.message ?: "Unknown error"
-                _uiState.update {
-                    it.copy(
-                        isProcessing = false,
-                        message = "Failed to create backup: $errorMsg",
-                        error = true
-                    )
-                }
+                _uiState.update { it.copy(isProcessing = false, message = "Failed to create backup.", error = true) }
             }
         }
     }
@@ -57,27 +44,9 @@ class BackupRestoreViewModel @Inject constructor(
         viewModelScope.launch {
             val result = repository.restoreBackup(uri)
             if (result.isSuccess) {
-                val summary = result.getOrNull() ?: ""
-                _uiState.update {
-                    it.copy(
-                        isProcessing = false,
-                        message = if (summary.isNotEmpty()) "Restored! ($summary)" else "Data restored successfully!"
-                    )
-                }
+                _uiState.update { it.copy(isProcessing = false, message = "Data restored successfully!") }
             } else {
-                // Show the actual error message from the repository instead of a
-                // generic "Invalid file or format" — the repo returns specific
-                // messages like "Invalid backup format: not a valid MahirVerse backup file"
-                val errorMsg = result.exceptionOrNull()?.message
-                    ?: result.exceptionOrNull()?.javaClass?.simpleName
-                    ?: "Unknown error"
-                _uiState.update {
-                    it.copy(
-                        isProcessing = false,
-                        message = "Restore failed: $errorMsg",
-                        error = true
-                    )
-                }
+                _uiState.update { it.copy(isProcessing = false, message = "Failed to restore data. Invalid file or format.", error = true) }
             }
         }
     }

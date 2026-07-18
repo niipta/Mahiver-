@@ -23,11 +23,10 @@ class AutoBackupWorker @dagger.assisted.AssistedInject constructor(
     override suspend fun doWork(): Result {
         return try {
             val db = AppDatabase.getDatabase(applicationContext)
-
+            
             val moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
             val backupAdapter = moshi.adapter(BackupData::class.java)
 
-            // Plain JSON backup (no encryption — portable across reinstalls)
             val backupData = BackupData(
                 subjects = db.syllabusDao().getAllSubjectsSync(),
                 topics = db.syllabusDao().getAllTopicsSync(),
@@ -35,12 +34,10 @@ class AutoBackupWorker @dagger.assisted.AssistedInject constructor(
                 revisions = db.revisionDao().getAllRevisionsSync(),
                 focusSessions = db.focusDao().getAllSessionsSync(),
                 dailyPlans = db.plannerDao().getAllDailyPlansSync(),
-                exams = db.examDao().getAllExamsSync(),
-                mockTests = db.mockDao().getAllMockTestsSync(),
-                mockQuestions = db.mockDao().getAllMockQuestionsSync()
+                exams = db.examDao().getAllExamsSync()
             )
 
-            val jsonStr = backupAdapter.indent("  ").toJson(backupData)
+            val jsonStr = com.example.util.SecurityUtil.encryptData(backupAdapter.toJson(backupData))
 
             // Save to app's external files dir (Documents or backups folder)
             val backupDir = File(applicationContext.getExternalFilesDir(null), "backups")
@@ -50,7 +47,7 @@ class AutoBackupWorker @dagger.assisted.AssistedInject constructor(
 
             val dateFormat = SimpleDateFormat("yyyyMMdd_HHmm", Locale.getDefault())
             val fileName = "AutoBackup_${dateFormat.format(Date())}.json"
-
+            
             val file = File(backupDir, fileName)
             file.writeText(jsonStr)
 

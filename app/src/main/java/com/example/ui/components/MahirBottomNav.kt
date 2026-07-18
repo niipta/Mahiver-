@@ -66,7 +66,7 @@ fun MahirBottomNavigation(navController: NavController, modifier: Modifier = Mod
     val items = listOf(
         NavItem("home", Icons.Rounded.Home, "Home"),
         NavItem("syllabus", Icons.AutoMirrored.Rounded.MenuBook, "Syllabus"),
-        NavItem("analytics", Icons.Rounded.Quiz, "Stats"),
+        NavItem("mocks", Icons.Rounded.Quiz, "Mocks"),
         NavItem("focus", Icons.Rounded.Timer, "Focus"),
         NavItem("revision", Icons.Rounded.Repeat, "Revision"),
         NavItem("more", Icons.Rounded.MoreHoriz, "More")
@@ -75,7 +75,7 @@ fun MahirBottomNavigation(navController: NavController, modifier: Modifier = Mod
     val selectedIndex = when (currentRoute) {
         "home" -> 0
         "syllabus" -> 1
-        "analytics" -> 2
+        "mocks" -> 2
         "focus" -> 3
         "revision" -> 4
         "more" -> 5
@@ -85,11 +85,11 @@ fun MahirBottomNavigation(navController: NavController, modifier: Modifier = Mod
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = Dimens.screenPaddingHorizontal, vertical = Dimens.spacingMd),
+            .padding(horizontal = Dimens.screenPaddingHorizontal, vertical = Dimens.spacingLg),
         shape = RoundedCornerShape(Dimens.bottomNavRadius),
-        color = MaterialTheme.colorScheme.surface,
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        shadowElevation = 0.dp
+        shadowElevation = Dimens.bottomNavElevation
     ) {
         BoxWithConstraints(
             modifier = Modifier.padding(horizontal = Dimens.spacingXs, vertical = Dimens.spacingSm)
@@ -104,16 +104,16 @@ fun MahirBottomNavigation(navController: NavController, modifier: Modifier = Mod
                 label = "navIndicator"
             )
 
-            // Animated Indicator Pill — subtle, premium
+            // Animated Indicator Pill
             if (selectedIndex >= 0) {
                 Box(
                     modifier = Modifier
                         .offset(x = indicatorOffset)
                         .width(itemWidth)
-                        .height(40.dp)
+                        .height(44.dp)
                         .background(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
-                            RoundedCornerShape(12.dp)
+                            MahirColors.gold().copy(alpha = 0.15f),
+                            RoundedCornerShape(Dimens.pillRadius)
                         )
                 )
             }
@@ -129,7 +129,7 @@ fun MahirBottomNavigation(navController: NavController, modifier: Modifier = Mod
                     Column(
                         modifier = Modifier
                             .width(itemWidth)
-                            .height(40.dp)
+                            .height(44.dp)
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null,

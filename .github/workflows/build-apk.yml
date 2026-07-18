@@ -23,29 +23,16 @@ jobs:
 
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
-      with:
-        cache-disabled: true
 
-    - name: Ensure .env exists for Secrets Gradle Plugin
+    - name: Decode or Generate Keystore
       run: |
-        if [ ! -f .env ]; then
-          if [ -f .env.example ]; then
-            cp .env.example .env
-          else
-            printf 'GEMINI_API_KEY=""\nSUPABASE_URL=""\nSUPABASE_KEY=""\n' > .env
-          fi
+        if [ -f debug.keystore.base64 ]; then
+          base64 -d debug.keystore.base64 > debug.keystore
+        elif [ ! -f debug.keystore ]; then
+          keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
         fi
-
-    - name: Verify debug keystore exists (committed for stable signing)
-      run: |
-        # debug.keystore is committed to the repo so every CI build uses the
-        # SAME signing key. This allows APK updates over existing installs
-        # without requiring uninstall first.
-        if [ ! -f debug.keystore ]; then
-          echo "ERROR: debug.keystore not found! It should be committed to the repo."
-          exit 1
-        fi
-        echo "debug.keystore found — using committed signing key"
+        
+        # Remove in-process execution strategy as it causes AWT issues with KSP on CI
         sed -i 's/kotlin.compiler.execution.strategy=in-process//g' gradle.properties
 
     - name: Build Debug APK
@@ -54,5 +41,5 @@ jobs:
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: MahirVerse-debug
+        name: app-debug
         path: app/build/outputs/apk/debug/app-debug.apk

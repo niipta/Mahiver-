@@ -37,7 +37,7 @@ class AiPlannerEngine(private val getApiKey: () -> String) {
 
         val pendingTopics = subjects.flatMap { it.topics }.filter { !it.isFullyCompleted }.map { it.topic.name }.take(10)
         val pendingRevisions = revisions.filter { !it.isCompleted && it.isActive }.map { it.title }.take(5)
-
+        
         val prompt = """
             You are the "MahirVerse" intelligent productivity engine.
             Goal: Generate a minimal daily study plan based on user data.
@@ -48,16 +48,16 @@ class AiPlannerEngine(private val getApiKey: () -> String) {
               "weakTopicsDetected": ["Topic causing trouble"],
               "priorities": "Focus on revision today"
             }
-
+            
             Current Data:
             - Pending syllabus topics: ${pendingTopics.joinToString()}
             - Pending revisions: ${pendingRevisions.joinToString()}
             - Total study hours recently: $studyHours
             - Upcoming exams: $examsCount
-
+            
             Based on this, prioritize weak topics if revisions are piling up, and suggest 1-2 topics.
             CRITICAL RULES:
-            1. ONLY use exact topic names provided in the Current Data.
+            1. ONLY use exact topic names provided in the Current Data. 
             2. If Current Data is empty, do NOT make up fake subjects or fake topics. Instead, return empty lists [] for topics and a generic welcoming message for priorities (e.g. "Add topics to get started").
             3. Do not invent any placeholder data.
         """.trimIndent()
@@ -68,20 +68,26 @@ class AiPlannerEngine(private val getApiKey: () -> String) {
         )
 
         return try {
-            val response = AiHelper.callWithRetry(apiKey, request)
-
+            val response = try { 
+                RetrofitClient.service.generateContent(apiKey, "gemini-2.0-flash", request) 
+            } catch (e: retrofit2.HttpException) { 
+                if (e.code() == 404 || e.code() == 400) RetrofitClient.service.generateContent(apiKey, "gemini-1.5-flash", request) else throw e 
+            }
+            
             val jsonText = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
             val plan = jsonText?.let { adapter.fromJson(it) }
-
+            
             if (plan != null) {
                 AiPlanResult.Success(plan)
             } else {
                 AiPlanResult.Error("Empty AI response", retryable = true)
             }
-        } catch (e: AiCallException) {
-            AiPlanResult.Error(e.message, retryable = e.code == 429 || e.code == -1 || e.code in 500..599)
+        } catch (e: retrofit2.HttpException) {
+            AiPlanResult.Error("AI service error (${e.code()})", retryable = e.code() in 500..599)
+        } catch (e: java.io.IOException) {
+            AiPlanResult.Error("Network error", retryable = true)
         } catch (e: Throwable) {
-            AiPlanResult.Error("Unexpected error: ${e.message ?: "unknown"}", retryable = false)
+            AiPlanResult.Error("Unexpected error", retryable = false)
         }
     }
 }

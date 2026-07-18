@@ -18,10 +18,13 @@ class RestoreWorker(
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val auth = FirebaseAuth.getInstance()
         if (auth.currentUser == null) {
-            // No user logged in — skip restore
-            return@withContext Result.success()
+            try {
+                auth.signInAnonymously().await()
+            } catch (e: Exception) {
+                return@withContext Result.retry()
+            }
         }
-
+        
         val userId = auth.currentUser?.uid ?: return@withContext Result.retry()
         val db = FirebaseFirestore.getInstance()
         val localDb = AppDatabase.getDatabase(applicationContext)

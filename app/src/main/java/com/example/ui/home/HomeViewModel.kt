@@ -70,16 +70,7 @@ data class HomeUiState(
     val dailyGoalMinutes: Int = 120,
     val todayFocusMinutes: Int = 0,
     val error: String? = null,
-    val newUnlockedAchievement: com.example.domain.Achievement? = null,
-    // AI personal analysis
-    val analysisSummary: String? = null,
-    val analysisStrengths: List<String> = emptyList(),
-    val analysisImprovements: List<String> = emptyList(),
-    val tonightTask: String? = null,
-    val motivationalMessage: String? = null,
-    val analysisLoading: Boolean = false,
-    // Daily motivational quote (local, no API)
-    val dailyQuote: String = com.example.data.ai.MotivationalQuotes.daily()
+    val newUnlockedAchievement: com.example.domain.Achievement? = null
 )
 
 
@@ -227,49 +218,21 @@ class HomeViewModel @Inject constructor(
     private val _aiLoading = kotlinx.coroutines.flow.MutableStateFlow(false)
     private val _aiError = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
     private val _unlockedAchievementState = kotlinx.coroutines.flow.MutableStateFlow<com.example.domain.Achievement?>(null)
-
-    // AI personal analysis state
-    private val _analysisState = kotlinx.coroutines.flow.MutableStateFlow<com.example.data.ai.PersonalAnalysis?>(null)
-    private val _analysisLoading = kotlinx.coroutines.flow.MutableStateFlow(false)
-
-    // Stage 1: combine DB+timer state with AI plan state (5 flows)
-    private data class StageAiPlan(
-        val dbState: HomeUiState,
-        val plan: DailyPlanResponse?,
-        val loading: Boolean,
-        val err: String?,
-        val newAchievement: com.example.domain.Achievement?
-    )
-
-    private val stageAiPlan = combine(
+    
+    val fullUiState: StateFlow<HomeUiState> = combine(
         _dbAndTimerState,
         _aiPlanState,
         _aiLoading,
         _aiError,
         _unlockedAchievementState
     ) { dbState, plan, loading, err, newAchievement ->
-        StageAiPlan(dbState, plan, loading, err, newAchievement)
-    }
-
-    // Stage 2: combine stage1 with analysis state (3 flows)
-    val fullUiState: StateFlow<HomeUiState> = combine(
-        stageAiPlan,
-        _analysisState,
-        _analysisLoading
-    ) { stage, analysis, analysisLoading ->
-        stage.dbState.copy(
-            suggestedTopics = stage.plan?.suggestedTopics ?: emptyList(),
-            weakTopics = stage.plan?.weakTopicsDetected ?: emptyList(),
-            priorities = stage.plan?.priorities ?: "Review your pending tasks",
-            aiPlanLoading = stage.loading,
-            error = stage.err,
-            newUnlockedAchievement = stage.newAchievement,
-            analysisSummary = analysis?.summary,
-            analysisStrengths = analysis?.strengths ?: emptyList(),
-            analysisImprovements = analysis?.improvements ?: emptyList(),
-            tonightTask = analysis?.tonightTask,
-            motivationalMessage = analysis?.motivationalMessage,
-            analysisLoading = analysisLoading
+        dbState.copy(
+            suggestedTopics = plan?.suggestedTopics ?: emptyList(),
+            weakTopics = plan?.weakTopicsDetected ?: emptyList(),
+            priorities = plan?.priorities ?: "Review your pending tasks",
+            aiPlanLoading = loading,
+            error = err,
+            newUnlockedAchievement = newAchievement
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HomeUiState())
     
@@ -372,50 +335,6 @@ class HomeViewModel @Inject constructor(
                 }
             }
             _aiLoading.value = false
-        }
-    }
-
-    /**
-     * Generates a personalized AI analysis of the user's study habits.
-     * Includes strengths, improvements, tonight's task, and a motivational
-     * message. At night (after 8 PM), the tone shifts to a gentle guilt trip
-     * if the user hasn't met their daily goal.
-     */
-    fun generateAnalysis() {
-        if (_analysisLoading.value) return
-        _analysisLoading.value = true
-        _aiError.value = null
-
-        viewModelScope.launch {
-            val dbData = dbDataState.firstOrNull() ?: run {
-                _analysisLoading.value = false
-                return@launch
-            }
-
-            val engine = com.example.data.ai.AiAnalysisEngine {
-                settingsRepository.geminiApiKey.value
-            }
-
-            val result = engine.generateAnalysis(
-                subjects = dbData.subjectsWithTopics,
-                revisions = dbData.revisions,
-                recentSessions = dbData.focusSessions,
-                currentStreak = settingsRepository.currentStreak.value,
-                dailyGoalMinutes = settingsRepository.dailyGoalMinutes.value
-            )
-
-            when (result) {
-                is com.example.data.ai.AiAnalysisResult.Success -> {
-                    _analysisState.value = result.analysis
-                }
-                is com.example.data.ai.AiAnalysisResult.Error -> {
-                    _aiError.value = result.message
-                }
-                is com.example.data.ai.AiAnalysisResult.NoApiKey -> {
-                    _aiError.value = "No API key configured. Add your Gemini key in Settings."
-                }
-            }
-            _analysisLoading.value = false
         }
     }
 

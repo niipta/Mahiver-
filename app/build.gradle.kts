@@ -17,8 +17,8 @@ android {
     applicationId = "com.aistudio.mahirverse.xjklqa"
     minSdk = 24
     targetSdk = 35
-    versionCode = 11
-    versionName = "4.2"
+    versionCode = 12
+    versionName = "4.3"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -48,9 +48,7 @@ android {
       signingConfig = signingConfigs.getByName("release")
     }
     debug {
-      // Use the debugConfig signing so CI builds are signed with the same
-      // keystore every time, allowing APK updates over existing installs.
-      signingConfig = signingConfigs.getByName("debugConfig")
+      // Use default debug signing (no custom config needed)
     }
   }
   compileOptions {
@@ -116,7 +114,6 @@ dependencies {
   // implementation(libs.firebase.ai)
   implementation(libs.kotlinx.coroutines.android)
   implementation(libs.kotlinx.coroutines.core)
-  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
   implementation(libs.logging.interceptor)
   implementation(libs.moshi.kotlin)
   implementation(libs.okhttp)

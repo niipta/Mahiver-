@@ -198,12 +198,7 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_9_10,
                     MIGRATION_10_11
                 )
-                // Safety nets: if a migration is missing (e.g. pre-v5 install
-                // upgrading to v11), fall back to destructive migration rather
-                // than crashing. This loses data only in the rare case where no
-                // migration path exists — which is better than a hard crash.
                 .fallbackToDestructiveMigrationOnDowngrade()
-                .fallbackToDestructiveMigration()
                 .build()
                 INSTANCE = instance
                 instance

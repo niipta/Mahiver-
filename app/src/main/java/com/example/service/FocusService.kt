@@ -251,32 +251,29 @@ class FocusService : Service() {
     private fun runTimer() {
         timerJob?.cancel()
         val currentRemainingSeconds = TimerManager.timeRemaining.value
-        // FIX: use originalDurationSeconds instead of getDurationMinutes() so
-        // that addTime() extensions are respected. The old code recalculated
-        // totalDurationMs from the base duration, losing any +5min extensions.
-        val totalDurationMs = TimerManager.originalDurationSeconds * 1000L
-
+        val totalDurationMs = TimerManager.getDurationMinutes(TimerManager.sessionType.value) * 60 * 1000L
+        
         val expectedElapsedMs = totalDurationMs - (currentRemainingSeconds * 1000L)
         sessionStartTimeMs = System.currentTimeMillis() - expectedElapsedMs
-
+        
         timerJob = serviceScope.launch {
             while (TimerManager.timerState.value == TimerState.RUNNING) {
                 val elapsed = System.currentTimeMillis() - sessionStartTimeMs
                 val remainingMs = java.lang.Long.max(0L, totalDurationMs - elapsed)
                 TimerManager.updateTime(remainingMs / 1000L)
-
+                
                 val now = System.currentTimeMillis()
                 if (now - lastNotifUpdateMs >= 1000) {
                     updateNotification()
                     sendBroadcast(android.content.Intent("com.example.widget.ACTION_TIMER_TICK"))
                     lastNotifUpdateMs = now
                 }
-
+                
                 if (remainingMs <= 0L) {
                     finishSession()
                     break
                 }
-                delay(250)
+                delay(250) // Update 4x/sec for smooth UI, but time is wall-clock accurate
             }
         }
     }
@@ -341,17 +338,10 @@ class FocusService : Service() {
     }
 
     private fun saveCompletedSession(manualStop: Boolean = false) {
-        // FIX: Don't save break sessions as focus sessions. Breaks are just
-        // rest periods and should not appear in study time / analytics.
-        val currentSessionType = TimerManager.sessionType.value
-        if (currentSessionType == SessionType.SHORT_BREAK || currentSessionType == SessionType.LONG_BREAK) {
-            return
-        }
-
         val initialSeconds = TimerManager.originalDurationSeconds
         val remainingSeconds = TimerManager.timeRemaining.value
         val actualSecondsSpent = (initialSeconds - remainingSeconds).toInt()
-
+        
         if (actualSecondsSpent < 60) return // Don't save sessions under 1 minute
 
         val subjectId = TimerManager.selectedSubjectId.value
@@ -485,6 +475,8 @@ class FocusService : Service() {
             .setContentIntent(pendingIntent)
             .setOngoing(true)
             .setSilent(true)
+            .setColor(android.graphics.Color.parseColor("#090A0F"))
+            .setColorized(true)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
         val actionsList = mutableListOf<androidx.core.app.NotificationCompat.Action>()
@@ -530,15 +522,15 @@ class FocusService : Service() {
             builder.setProgress(maxS, elapsed, false)
             
             if (sessionType == SessionType.FOCUS) {
-                builder.setContentTitle("⏱ $timeString • Deep Focus")
-                builder.setContentText(hierarchy.replace("\n", " → "))
-
+                builder.setContentTitle("🔥 Deep Focus Active")
+                builder.setContentText("⏱ $timeString Remaining")
+                
                 val bigText = "⏱ $timeString Remaining\n\n$hierarchy\n\n📊 Progress: Session $focusSessionCount of 4"
                 builder.setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
             } else {
-                builder.setContentTitle("⏱ $timeString • Break")
-                builder.setContentText("Relax and recharge")
-
+                builder.setContentTitle("☕ Break Time")
+                builder.setContentText("⏱ $timeString Remaining")
+                
                 val bigText = "⏱ $timeString Remaining\nRelax and recharge.\n\nPrevious Topic:\n$hierarchy"
                 builder.setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
             }
@@ -569,25 +561,34 @@ class FocusService : Service() {
             actionsList.add(NotificationCompat.Action(android.R.drawable.ic_menu_close_clear_cancel, "Stop", stopPending))
             
             compactActions = intArrayOf(1, 2)
-
-            // NOTE: MediaStyle removed — it was hiding the timer text on many devices.
-            // BigTextStyle (set above) shows the timer + subject hierarchy clearly.
-            // The mediaSession is kept active for lock-screen controls but no longer
-            // overrides the notification style.
+            
+            mediaSession?.let { session ->
+                val title = if (sessionType == SessionType.FOCUS) "Deep Focus" else "Break Time"
+                
+                val metadata = android.support.v4.media.MediaMetadataCompat.Builder()
+                    .putString(android.support.v4.media.MediaMetadataCompat.METADATA_KEY_TITLE, title)
+                    .putString(android.support.v4.media.MediaMetadataCompat.METADATA_KEY_ARTIST, "$sNameF - $tNameF")
+                    .putLong(android.support.v4.media.MediaMetadataCompat.METADATA_KEY_DURATION, maxSeconds * 1000L)
+                    .build()
+                session.setMetadata(metadata)
+                
+                val state = if (timerState == TimerState.RUNNING) android.support.v4.media.session.PlaybackStateCompat.STATE_PLAYING else android.support.v4.media.session.PlaybackStateCompat.STATE_PAUSED
+                val playbackState = android.support.v4.media.session.PlaybackStateCompat.Builder()
+                    .setState(state, elapsed * 1000L, 1f)
+                    .setActions(android.support.v4.media.session.PlaybackStateCompat.ACTION_PLAY_PAUSE or android.support.v4.media.session.PlaybackStateCompat.ACTION_STOP)
+                    .build()
+                session.setPlaybackState(playbackState)
+                
+                builder.setStyle(
+                    androidx.media.app.NotificationCompat.MediaStyle()
+                        .setMediaSession(session.sessionToken)
+                        .setShowActionsInCompactView(*compactActions)
+                )
+            }
         }
 
         for (action in actionsList) {
             builder.addAction(action)
-        }
-
-        // For completed state, ensure actions are visible in compact view.
-        // Some OEMs hide actions if compactActions isn't set explicitly.
-        if (timerState == TimerState.COMPLETED && actionsList.isNotEmpty()) {
-            // Show up to 2 actions in compact view
-            val compactIndices = if (actionsList.size >= 2) intArrayOf(0, 1) else intArrayOf(0)
-            // Use BigTextStyle with actions — the actions appear below the text
-            // and are always visible when the notification is expanded.
-            // For collapsed view, compactActions ensures buttons show.
         }
 
         mediaSession?.isActive = timerState == TimerState.RUNNING || timerState == TimerState.PAUSED
